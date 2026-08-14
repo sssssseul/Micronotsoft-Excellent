@@ -18,9 +18,6 @@ def init_db():
         return
     conn = get_conn()
     cur = conn.cursor()
-    # TEMP: reset broken tables from an earlier failed deploy attempt.
-    # Remove this line after the next successful deploy.
-    cur.execute("DROP TABLE IF EXISTS matches, scores, users CASCADE;")
     cur.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
