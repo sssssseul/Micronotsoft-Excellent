@@ -610,9 +610,11 @@
         <div class="stat-line">분당 타수(CPM) <b id="resCpm">0</b></div>
         <div class="stat-line">정확도 <b id="resAcc">0%</b></div>
       </div>
-      <div class="dialog-btns">
+      <div class="dialog-btns" style="flex-direction:column; align-items:stretch;">
+        <button class="winbtn" id="retryBtn">🔁 다시 시작하기</button>
+        <button class="winbtn secondary" id="resHistoryBtn">📈 내 기록 보기</button>
+        <button class="winbtn secondary" id="resMatchBtn">🆚 친구와 대결하기</button>
         <button class="winbtn secondary" id="closeBtn">닫기</button>
-        <button class="winbtn" id="retryBtn">다시하기</button>
       </div>
     </div>
   </div>
@@ -865,6 +867,14 @@
   }
 
   historyBtn.addEventListener('click', openHistory);
+  document.getElementById('resHistoryBtn').addEventListener('click', () => {
+    resultOverlay.style.display = 'none';
+    openHistory();
+  });
+  document.getElementById('resMatchBtn').addEventListener('click', () => {
+    resultOverlay.style.display = 'none';
+    openMatchDialog();
+  });
   historyCloseBtn.addEventListener('click', () => { historyOverlay.style.display = 'none'; });
 
   // ---- versus match feature ----
