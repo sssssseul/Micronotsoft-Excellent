@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Micronotsoft Excellent - 통합 문서1</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: #d9d9d9;
+    font-family: "Segoe UI", "Malgun Gothic", Tahoma, Arial, sans-serif;
+    overflow: hidden;
+    user-select: none;
+  }
+  body { display: flex; align-items: center; justify-content: center; padding: 6px; }
+
+  .window {
+    width: 100%;
+    max-width: 780px;
+    height: 100%;
+    max-height: 690px;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.35);
+    display: flex;
+    flex-direction: column;
+    font-size: 12px;
+  }
+
+  /* title bar - Win11 style, merged with quick access */
+  .titlebar {
+    background: #0f7244;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0 0 10px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+  .titlebar-left { display: flex; align-items: center; gap: 8px; overflow: hidden; height: 100%; }
+  .titlebar-icon {
+    width: 18px; height: 18px;
+    background: #fff;
+    border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+    color: #0f7244;
+    font-weight: bold;
+  }
+  .qat { display: flex; align-items: center; gap: 10px; margin-left: 4px; }
+  .qat span { font-size: 13px; opacity: 0.9; cursor: default; }
+  .titlebar-left .fname { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.95; }
+  .titlebar-btns { display: flex; height: 100%; flex-shrink: 0; }
+  .tbtn {
+    width: 44px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    cursor: pointer;
+    font-size: 11px;
+    font-family: "Segoe UI Symbol", Arial, sans-serif;
+  }
+  .tbtn:hover { background: rgba(255,255,255,0.15); }
+  .tbtn.close:hover { background: #e81123; }
+
+  /* ribbon tabs */
+  .ribbontabs {
+    background: #fff;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    gap: 2px;
+    font-size: 12.5px;
+    border-bottom: 1px solid #e1e1e1;
+    flex-shrink: 0;
+    overflow-x: auto;
+    white-space: nowrap;
+    color: #444;
+  }
+  .rtab { padding: 8px 10px 7px; cursor: default; }
+  .rtab.active {
+    color: #0f7244;
+    font-weight: 600;
+    border-bottom: 2.5px solid #0f7244;
+  }
+
+  /* ribbon body */
+  .ribbon {
+    background: #fafafa;
+    border-bottom: 1px solid #e1e1e1;
+    display: flex;
+    align-items: stretch;
+    padding: 6px 8px;
+    flex-shrink: 0;
+    gap: 4px;
+    overflow-x: auto;
+  }
+  .rgroup {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2px 8px;
+    border-right: 1px solid #e5e5e5;
+    flex-shrink: 0;
+  }
+  .rgroup:last-child { border-right: none; }
+  .rgroup-icons { display: flex; gap: 4px; align-items: center; }
+  .rgroup-label { font-size: 9.5px; color: #666; margin-top: 4px; white-space: nowrap; }
+  .ricon {
+    min-width: 26px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    border-radius: 4px;
+    color: #333;
+    padding: 0 3px;
+  }
+  .ricon.big { flex-direction: column; height: 44px; width: 40px; font-size: 16px; gap: 2px; }
+  .ricon.big span { font-size: 8px; color: #444; }
+  .rbox {
+    height: 22px;
+    border: 1px solid #d6d6d6;
+    border-radius: 4px;
+    background: #fff;
+    font-size: 10.5px;
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+    color: #000;
+  }
+  .rbox.font { width: 70px; }
+  .rbox.size { width: 28px; justify-content: center; }
+  .rrow { display: flex; gap: 3px; align-items: center; margin: 1px 0; }
+
+  /* formula bar */
+  .formulabar {
+    background: #fff;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    border-bottom: 1px solid #e1e1e1;
+    flex-shrink: 0;
+  }
+  .namebox {
+    width: 60px;
+    background: #fff;
+    border: 1px solid #d6d6d6;
+    border-radius: 4px;
+    padding: 3px 6px;
+    font-size: 11.5px;
+    color: #000;
+    flex-shrink: 0;
+  }
+  .fx {
+    font-style: italic;
+    font-weight: 600;
+    color: #0f7244;
+    font-size: 13px;
+    padding: 0 2px;
+    flex-shrink: 0;
+  }
+  .formulacontent {
+    flex: 1;
+    background: #fff;
+    border: 1px solid #d6d6d6;
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 12.5px;
+    color: #000;
+    overflow: hidden;
+    white-space: nowrap;
+    min-height: 20px;
+  }
+
+  /* grid */
+  .gridwrap {
+    flex: 1;
+    overflow: auto;
+    background: #fff;
+    position: relative;
+  }
+  table.sheet {
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  table.sheet th, table.sheet td {
+    border: 1px solid #e2e2e2;
+    width: 62px;
+    height: 22px;
+    font-size: 11.5px;
+    text-align: center;
+    padding: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    color: #1a1a1a;
+  }
+  table.sheet th {
+    background: #f3f3f3;
+    color: #555;
+    font-weight: normal;
+    border: 1px solid #dcdcdc;
+    position: sticky;
+    top: 0;
+    z-index: 3;
+  }
+  table.sheet th.hdr-active {
+    background: #cdeadd;
+    color: #0f7244;
+    font-weight: 600;
+  }
+  table.sheet td.rowhead {
+    background: #f3f3f3;
+    border: 1px solid #dcdcdc;
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    color: #555;
+  }
+  table.sheet td.rowhead.hdr-active {
+    background: #cdeadd;
+    color: #0f7244;
+    font-weight: 600;
+  }
+  table.sheet th.corner {
+    position: sticky;
+    left: 0;
+    top: 0;
+    z-index: 4;
+    background: #f3f3f3;
+  }
+  table.sheet th.corner::after {
+    content: '';
+    position: absolute;
+    right: 4px; bottom: 4px;
+    width: 0; height: 0;
+    border-left: 5px solid transparent;
+    border-bottom: 5px solid #a8a8a8;
+  }
+  .cell-filled {
+    background: #eaf6ef;
+    color: #0f5c33;
+    font-weight: 600;
+  }
+  .cell-ghost {
+    color: #b9b9b9;
+    letter-spacing: 0.5px;
+  }
+  .cell-active {
+    background: #fff !important;
+  }
+
+  #cellInput {
+    position: absolute;
+    font-family: "Segoe UI", "Malgun Gothic", Arial, sans-serif;
+    font-size: 11.5px;
+    text-align: center;
+    border: 2px solid #0f7244;
+    border-radius: 1px;
+    outline: none;
+    background: rgba(255,255,255,0.001);
+    color: #000;
+    padding: 0;
+    margin: 0;
+    z-index: 6;
+    caret-color: #000;
+    box-shadow: 0 0 0 1px rgba(15,114,68,0.15);
+  }
+  #cellInput.err { background: rgba(230,80,80,0.28); }
+  #fillHandle {
+    position: absolute;
+    width: 6px; height: 6px;
+    background: #0f7244;
+    border: 1px solid #fff;
+    z-index: 7;
+    pointer-events: none;
+  }
+
+  /* sheet tabs */
+  .sheettabs {
+    flex-shrink: 0;
+    background: #f3f3f3;
+    border-top: 1px solid #e1e1e1;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    font-size: 11px;
+    overflow: hidden;
+  }
+  .addtab {
+    width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+    color: #0f7244;
+    font-size: 14px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .tab {
+    padding: 5px 12px;
+    color: #666;
+    border-radius: 4px 4px 0 0;
+    flex-shrink: 0;
+  }
+  .tab.active {
+    background: #fff;
+    color: #0f7244;
+    font-weight: 600;
+    box-shadow: 0 -2px 0 #0f7244 inset;
+  }
+
+  /* status bar */
+  .statusbar {
+    flex-shrink: 0;
+    background: #f3f3f3;
+    border-top: 1px solid #e5e5e5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 3px 10px;
+    font-size: 10.5px;
+    color: #555;
+  }
+  .statusbar .left { display: flex; align-items: center; gap: 10px; }
+  .statgame { display: flex; gap: 12px; }
+  .statgame b { color: #0f7244; }
+  .timeleft b { color: #c0392b; }
+
+  /* modal overlay */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+  }
+  .dialog {
+    width: 280px;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  }
+  .dialog-title {
+    background: #0f7244;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 10px 14px;
+  }
+  .dialog-body {
+    padding: 16px 16px 6px;
+    font-size: 12px;
+    line-height: 1.9;
+    color: #222;
+  }
+  .dialog-body .icon-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .dialog-body .icon-row .emoji { font-size: 30px; }
+  .dialog-btns {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding: 10px 16px 16px;
+  }
+  .winbtn {
+    background: #0f7244;
+    border: none;
+    border-radius: 5px;
+    padding: 7px 16px;
+    font-size: 11.5px;
+    font-family: inherit;
+    cursor: pointer;
+    color: #fff;
+    font-weight: 500;
+  }
+  .winbtn.secondary { background: #f0f0f0; color: #333; }
+  .winbtn:active { filter: brightness(0.9); }
+  .stat-line { display: flex; justify-content: space-between; }
+  .stat-line b { color: #0f7244; }
+
+  ::-webkit-scrollbar { width: 14px; height: 14px; }
+  ::-webkit-scrollbar-track { background: #fff; }
+  ::-webkit-scrollbar-thumb { background: #d6d6d6; border-radius: 7px; border: 3px solid #fff; }
+</style>
+</head>
+<body>
+
+<div class="window" id="window">
+  <div class="titlebar">
+    <div class="titlebar-left">
+      <div class="titlebar-icon">X</div>
+      <div class="qat">
+        <span>⟲</span><span>⟳</span><span>💾</span>
+      </div>
+      <div class="fname">Micronotsoft Excellent - 통합 문서1.xlsx - 저장됨</div>
+    </div>
+    <div class="titlebar-btns">
+      <div class="tbtn">─</div>
+      <div class="tbtn">▢</div>
+      <div class="tbtn close">✕</div>
+    </div>
+  </div>
+
+  <div class="ribbontabs">
+    <span class="rtab">파일</span>
+    <span class="rtab active">홈</span>
+    <span class="rtab">삽입</span>
+    <span class="rtab">그리기</span>
+    <span class="rtab">페이지 레이아웃</span>
+    <span class="rtab">수식</span>
+    <span class="rtab">데이터</span>
+    <span class="rtab">검토</span>
+    <span class="rtab">보기</span>
+    <span class="rtab">도움말</span>
+  </div>
+
+  <div class="ribbon">
+    <div class="rgroup">
+      <div class="rgroup-icons">
+        <div class="ricon big">📋<span>붙여넣기</span></div>
+        <div class="ricon">✂️</div>
+        <div class="ricon">📄</div>
+      </div>
+      <div class="rgroup-label">클립보드</div>
+    </div>
+    <div class="rgroup">
+      <div class="rrow">
+        <div class="rbox font">맑은 고딕</div>
+        <div class="rbox size">11</div>
+      </div>
+      <div class="rrow">
+        <div class="ricon" style="font-weight:bold;">B</div>
+        <div class="ricon" style="font-style:italic;">I</div>
+        <div class="ricon" style="text-decoration:underline;">U</div>
+        <div class="ricon">🎨</div>
+        <div class="ricon">⬛</div>
+      </div>
+      <div class="rgroup-label">글꼴</div>
+    </div>
+    <div class="rgroup">
+      <div class="rrow">
+        <div class="ricon">≡</div><div class="ricon">☰</div><div class="ricon">≣</div>
+      </div>
+      <div class="rrow">
+        <div class="ricon">↕</div><div class="ricon">↩︎</div>
+      </div>
+      <div class="rgroup-label">맞춤</div>
+    </div>
+    <div class="rgroup">
+      <div class="rrow">
+        <div class="rbox" style="width:80px;">일반</div>
+      </div>
+      <div class="rrow">
+        <div class="ricon">₩</div><div class="ricon">%</div><div class="ricon">.0</div>
+      </div>
+      <div class="rgroup-label">표시 형식</div>
+    </div>
+    <div class="rgroup">
+      <div class="rgroup-icons">
+        <div class="ricon big">🧩<span>서식</span></div>
+      </div>
+      <div class="rgroup-label">스타일</div>
+    </div>
+    <div class="rgroup">
+      <div class="rgroup-icons">
+        <div class="ricon big">➕<span>삽입</span></div>
+        <div class="ricon big">➖<span>삭제</span></div>
+      </div>
+      <div class="rgroup-label">셀</div>
+    </div>
+    <div class="rgroup">
+      <div class="rgroup-icons">
+        <div class="ricon big">Σ<span>자동 합계</span></div>
+        <div class="ricon big">↕A<span>정렬</span></div>
+        <div class="ricon big">🔍<span>찾기</span></div>
+      </div>
+      <div class="rgroup-label">편집</div>
+    </div>
+  </div>
+
+  <div class="formulabar">
+    <div class="namebox" id="namebox">A1</div>
+    <div class="fx">𝑓𝑥</div>
+    <div class="formulacontent" id="formulacontent"></div>
+  </div>
+
+  <div class="gridwrap" id="gridwrap">
+    <input id="cellInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" disabled>
+    <div id="fillHandle" style="display:none;"></div>
+  </div>
+
+  <div class="sheettabs">
+    <div class="addtab">+</div>
+    <div class="tab active">Sheet1</div>
+    <div class="tab">Sheet2</div>
+    <div class="tab">Sheet3</div>
+  </div>
+
+  <div class="statusbar">
+    <div class="left"><span>준비</span></div>
+    <div class="statgame">
+      <span>완료 셀: <b id="statCells">0</b></span>
+      <span>정확도: <b id="statAcc">100%</b></span>
+      <span class="timeleft">남은시간: <b id="statTime">60</b>초</span>
+    </div>
+  </div>
+
+  <!-- start dialog -->
+  <div class="overlay" id="startOverlay">
+    <div class="dialog">
+      <div class="dialog-title">Micronotsoft Excellent</div>
+      <div class="dialog-body">
+        <div class="icon-row">
+          <span class="emoji">📗</span>
+          <div>60초 동안<br>셀을 최대한 채워보세요!</div>
+        </div>
+        회색 글씨로 표시된 단어를<br>셀 안에 그대로 입력하세요.
+      </div>
+      <div class="dialog-btns">
+        <button class="winbtn" id="startBtn">시작</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- result dialog -->
+  <div class="overlay" id="resultOverlay" style="display:none;">
+    <div class="dialog">
+      <div class="dialog-title">저장 완료 - 결과.xlsx</div>
+      <div class="dialog-body">
+        <div class="icon-row">
+          <span class="emoji">💾</span>
+          <div>수고하셨습니다!<br>통합 문서가 저장되었습니다.</div>
+        </div>
+        <div class="stat-line">완성 셀 수 <b id="resCells">0</b></div>
+        <div class="stat-line">분당 타수(CPM) <b id="resCpm">0</b></div>
+        <div class="stat-line">정확도 <b id="resAcc">0%</b></div>
+      </div>
+      <div class="dialog-btns">
+        <button class="winbtn secondary" id="closeBtn">닫기</button>
+        <button class="winbtn" id="retryBtn">다시하기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const WORDS = [
+    "야근","칼퇴","회식","월급날","점심시간","보고서","오탈자","팀장님",
+    "브이룩업","피벗테이블","매크로","조건부서식","셀병합","서식복사",
+    "단축키","저장버튼","자동완성","인쇄영역","합계","평균","필터",
+    "정렬","시트추가","암호설정","공유폴더","화면분할","틀고정",
+    "참조오류","순환참조","데이터유효성","자동필터","슬라이서",
+    "대시보드","주간보고","월간실적","커밋","배포","야식",
+    "휴가승인","연차소진","재택근무","화상회의","슬랙알림",
+    "탕비실","커피믹스","프린터잼","와이파이","키보드워리어"
+  ];
+
+  const ROWS = 30, COLS = 12;
+  const COLLETTERS = "ABCDEFGHIJKL";
+  const gridwrap = document.getElementById('gridwrap');
+  const cellInput = document.getElementById('cellInput');
+  const fillHandle = document.getElementById('fillHandle');
+  const namebox = document.getElementById('namebox');
+  const formulacontent = document.getElementById('formulacontent');
+  const statCells = document.getElementById('statCells');
+  const statAcc = document.getElementById('statAcc');
+  const statTime = document.getElementById('statTime');
+  const startOverlay = document.getElementById('startOverlay');
+  const resultOverlay = document.getElementById('resultOverlay');
+
+  let cells = [];
+  let cellIndex = 0;
+  let target = "";
+  let prevLen = 0;
+  let totalKeys = 0, correctKeys = 0, completedCells = 0;
+  let timeLeft = 60;
+  let timer = null;
+  let sheetTable = null;
+
+  function buildGrid(){
+    let html = '<table class="sheet"><thead><tr><th class="corner"></th>';
+    for (let c = 0; c < COLS; c++) html += '<th data-col="' + c + '">' + COLLETTERS[c] + '</th>';
+    html += '</tr></thead><tbody>';
+    for (let r = 1; r <= ROWS; r++) {
+      html += '<tr><td class="rowhead" data-row="' + r + '">' + r + '</td>';
+      for (let c = 0; c < COLS; c++) {
+        html += '<td data-r="' + r + '" data-c="' + c + '"></td>';
+      }
+      html += '</tr>';
+    }
+    html += '</tbody></table>';
+    const old = gridwrap.querySelector('table.sheet');
+    if (old) old.remove();
+    gridwrap.insertAdjacentHTML('afterbegin', html);
+    sheetTable = gridwrap.querySelector('table.sheet');
+    cells = Array.from(sheetTable.querySelectorAll('td[data-r]'));
+  }
+
+  function randomWord(){
+    return WORDS[Math.floor(Math.random() * WORDS.length)];
+  }
+
+  function cellRef(td){
+    return COLLETTERS[td.dataset.c] + td.dataset.r;
+  }
+
+  function clearHeaderHighlight(){
+    sheetTable.querySelectorAll('.hdr-active').forEach(el => el.classList.remove('hdr-active'));
+  }
+
+  function positionInput(){
+    const td = cells[cellIndex];
+    const rect = td.getBoundingClientRect();
+    const wrapRect = gridwrap.getBoundingClientRect();
+    const left = rect.left - wrapRect.left + gridwrap.scrollLeft;
+    const top = rect.top - wrapRect.top + gridwrap.scrollTop;
+    cellInput.style.left = left + 'px';
+    cellInput.style.top = top + 'px';
+    cellInput.style.width = rect.width + 'px';
+    cellInput.style.height = rect.height + 'px';
+    fillHandle.style.left = (left + rect.width - 4) + 'px';
+    fillHandle.style.top = (top + rect.height - 4) + 'px';
+  }
+
+  function setActiveCell(idx){
+    if (idx >= cells.length) {
+      cells.forEach(td => { td.textContent=''; td.classList.remove('cell-filled'); });
+      idx = 0;
+    }
+    cellIndex = idx;
+    const td = cells[cellIndex];
+    clearHeaderHighlight();
+    const colHdr = sheetTable.querySelector('th[data-col="' + td.dataset.c + '"]');
+    const rowHdr = sheetTable.querySelector('td.rowhead[data-row="' + td.dataset.r + '"]');
+    if (colHdr) colHdr.classList.add('hdr-active');
+    if (rowHdr) rowHdr.classList.add('hdr-active');
+
+    namebox.textContent = cellRef(td);
+    target = randomWord();
+    td.textContent = target;
+    td.classList.add('cell-ghost');
+    prevLen = 0;
+
+    td.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    positionInput();
+    cellInput.value = '';
+    cellInput.classList.remove('err');
+    formulacontent.textContent = '';
+    fillHandle.style.display = 'block';
+    cellInput.focus();
+  }
+
+  function completeCell(){
+    const td = cells[cellIndex];
+    td.textContent = target;
+    td.classList.remove('cell-ghost');
+    td.classList.add('cell-filled');
+    completedCells++;
+    statCells.textContent = completedCells;
+    setActiveCell(cellIndex + 1);
+  }
+
+  function updateAcc(){
+    const acc = totalKeys === 0 ? 100 : Math.round((correctKeys / totalKeys) * 100);
+    statAcc.textContent = acc + '%';
+    return acc;
+  }
+
+  cellInput.addEventListener('input', () => {
+    const val = cellInput.value;
+    formulacontent.textContent = val;
+    if (val.length > prevLen) {
+      const idx = val.length - 1;
+      totalKeys++;
+      if (val[idx] === target[idx]) {
+        correctKeys++;
+        cellInput.classList.remove('err');
+      } else {
+        cellInput.classList.add('err');
+      }
+    } else {
+      cellInput.classList.remove('err');
+    }
+    prevLen = val.length;
+    updateAcc();
+
+    if (val === target) {
+      completeCell();
+    }
+  });
+
+  window.addEventListener('resize', () => { if (cells.length) positionInput(); });
+  gridwrap.addEventListener('scroll', () => { if (cells.length) positionInput(); });
+
+  function startGame(){
+    buildGrid();
+    completedCells = 0; totalKeys = 0; correctKeys = 0; timeLeft = 60;
+    statCells.textContent = '0';
+    statAcc.textContent = '100%';
+    statTime.textContent = '60';
+    cellInput.disabled = false;
+    setActiveCell(0);
+    clearInterval(timer);
+    timer = setInterval(() => {
+      timeLeft--;
+      statTime.textContent = timeLeft;
+      if (timeLeft <= 0) endGame();
+    }, 1000);
+  }
+
+  function endGame(){
+    clearInterval(timer);
+    cellInput.disabled = true;
+    fillHandle.style.display = 'none';
+    const acc = updateAcc();
+    const cpm = correctKeys;
+    document.getElementById('resCells').textContent = completedCells;
+    document.getElementById('resCpm').textContent = cpm;
+    document.getElementById('resAcc').textContent = acc + '%';
+    resultOverlay.style.display = 'flex';
+  }
+
+  document.getElementById('startBtn').addEventListener('click', () => {
+    startOverlay.style.display = 'none';
+    startGame();
+  });
+  document.getElementById('retryBtn').addEventListener('click', () => {
+    resultOverlay.style.display = 'none';
+    startGame();
+  });
+  document.getElementById('closeBtn').addEventListener('click', () => {
+    resultOverlay.style.display = 'none';
+    startOverlay.style.display = 'flex';
+  });
+
+  buildGrid();
+})();
+</script>
+
+</body>
+</html>
