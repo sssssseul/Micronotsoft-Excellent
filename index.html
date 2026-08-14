@@ -247,7 +247,10 @@
     color: #0f5c33;
     font-weight: 600;
   }
-  .cell-ghost {
+  .cell-typed {
+    color: #000;
+  }
+  .cell-ghost-suffix {
     color: #b9b9b9;
   }
   .cell-active {
@@ -264,7 +267,7 @@
     outline: 2px solid #0f7244;
     outline-offset: -2px;
     background: rgba(255,255,255,0.001);
-    color: #000;
+    color: transparent;
     margin: 0;
     z-index: 6;
     caret-color: #000;
@@ -649,8 +652,7 @@
 
     namebox.textContent = cellRef(td);
     target = randomWord();
-    td.textContent = target;
-    td.classList.add('cell-ghost');
+    td.innerHTML = '<span class="cell-typed"></span><span class="cell-ghost-suffix">' + target + '</span>';
     prevLen = 0;
 
     td.scrollIntoView({ block: 'nearest', inline: 'nearest' });
@@ -666,7 +668,6 @@
   function completeCell(){
     const td = cells[cellIndex];
     td.textContent = target;
-    td.classList.remove('cell-ghost');
     td.classList.add('cell-filled');
     completedCells++;
     statCells.textContent = completedCells;
@@ -682,6 +683,11 @@
   cellInput.addEventListener('input', () => {
     const val = cellInput.value;
     formulacontent.textContent = val;
+    const td = cells[cellIndex];
+    const typedSpan = td.querySelector('.cell-typed');
+    const ghostSpan = td.querySelector('.cell-ghost-suffix');
+    if (typedSpan) typedSpan.textContent = val;
+    if (ghostSpan) ghostSpan.textContent = val.length < target.length ? target.slice(val.length) : '';
     if (val.length > prevLen) {
       const idx = val.length - 1;
       totalKeys++;
