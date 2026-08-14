@@ -18,6 +18,9 @@ def init_db():
         return
     conn = get_conn()
     cur = conn.cursor()
+    # TEMP: reset broken tables from an earlier failed deploy attempt.
+    # Remove this line after the next successful deploy.
+    cur.execute("DROP TABLE IF EXISTS matches, scores, users CASCADE;")
     cur.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
@@ -34,21 +37,6 @@ def init_db():
             cpm INTEGER NOT NULL,
             accuracy INTEGER NOT NULL,
             played_at TIMESTAMP DEFAULT NOW()
-        );
-    """)
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS matches (
-            id SERIAL PRIMARY KEY,
-            code TEXT UNIQUE NOT NULL,
-            player1_nickname TEXT NOT NULL,
-            player1_cells INTEGER,
-            player1_cpm INTEGER,
-            player1_accuracy INTEGER,
-            player2_nickname TEXT,
-            player2_cells INTEGER,
-            player2_cpm INTEGER,
-            player2_accuracy INTEGER,
-            created_at TIMESTAMP DEFAULT NOW()
         );
     """)
     conn.commit()
@@ -166,151 +154,28 @@ def history():
     return jsonify(ok=True, history=result)
 
 
-import random
-import string
-
-
-def gen_code():
-    return "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
-
-
-@app.route("/api/match/create", methods=["POST"])
-def match_create():
-    data = request.get_json(force=True)
-    nickname = (data.get("nickname") or "").strip()
-    password = data.get("password") or ""
-
-    if not verify_user(nickname, password):
-        return jsonify(ok=False, error="로그인 정보가 올바르지 않습니다."), 401
-
-    conn = get_conn()
-    cur = conn.cursor()
-    code = gen_code()
-    for _ in range(6):
-        try:
-            cur.execute(
-                "INSERT INTO matches (code, player1_nickname) VALUES (%s, %s)",
-                (code, nickname),
-            )
-            conn.commit()
-            break
-        except psycopg2.errors.UniqueViolation:
-            conn.rollback()
-            code = gen_code()
-    cur.close()
-    conn.close()
-    return jsonify(ok=True, code=code)
-
-
-@app.route("/api/match/join", methods=["POST"])
-def match_join():
-    data = request.get_json(force=True)
-    code = (data.get("code") or "").strip().upper()
-    nickname = (data.get("nickname") or "").strip()
-    password = data.get("password") or ""
-
-    if not verify_user(nickname, password):
-        return jsonify(ok=False, error="로그인 정보가 올바르지 않습니다."), 401
-
+@app.route("/api/leaderboard", methods=["GET"])
+def leaderboard():
     conn = get_conn()
     cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("SELECT * FROM matches WHERE code = %s", (code,))
-    m = cur.fetchone()
-    if not m:
-        cur.close()
-        conn.close()
-        return jsonify(ok=False, error="존재하지 않는 코드예요."), 404
-    if m["player1_nickname"] == nickname:
-        cur.close()
-        conn.close()
-        return jsonify(ok=False, error="자기 자신과는 대결할 수 없어요."), 400
-    if m["player2_nickname"] and m["player2_nickname"] != nickname:
-        cur.close()
-        conn.close()
-        return jsonify(ok=False, error="이미 인원이 찬 대결이에요."), 400
-
-    if not m["player2_nickname"]:
-        cur.execute(
-            "UPDATE matches SET player2_nickname = %s WHERE code = %s",
-            (nickname, code),
-        )
-        conn.commit()
+    cur.execute("""
+        SELECT nickname, cpm, cells FROM (
+            SELECT DISTINCT ON (nickname) nickname, cpm, cells
+            FROM scores
+            ORDER BY nickname, cpm DESC
+        ) best
+        ORDER BY cpm DESC
+        LIMIT 50
+    """)
+    rows = cur.fetchall()
     cur.close()
     conn.close()
-    return jsonify(ok=True, opponent=m["player1_nickname"])
 
-
-@app.route("/api/match/submit", methods=["POST"])
-def match_submit():
-    data = request.get_json(force=True)
-    code = (data.get("code") or "").strip().upper()
-    nickname = (data.get("nickname") or "").strip()
-    password = data.get("password") or ""
-    cells = int(data.get("cells", 0))
-    cpm = int(data.get("cpm", 0))
-    accuracy = int(data.get("accuracy", 0))
-
-    if not verify_user(nickname, password):
-        return jsonify(ok=False, error="로그인 정보가 올바르지 않습니다."), 401
-
-    conn = get_conn()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("SELECT * FROM matches WHERE code = %s", (code,))
-    m = cur.fetchone()
-    if not m:
-        cur.close()
-        conn.close()
-        return jsonify(ok=False, error="존재하지 않는 코드예요."), 404
-
-    if m["player1_nickname"] == nickname:
-        cur.execute(
-            "UPDATE matches SET player1_cells=%s, player1_cpm=%s, player1_accuracy=%s WHERE code=%s",
-            (cells, cpm, accuracy, code),
-        )
-    elif m["player2_nickname"] == nickname:
-        cur.execute(
-            "UPDATE matches SET player2_cells=%s, player2_cpm=%s, player2_accuracy=%s WHERE code=%s",
-            (cells, cpm, accuracy, code),
-        )
-    else:
-        cur.close()
-        conn.close()
-        return jsonify(ok=False, error="이 대결에 참가하지 않았습니다."), 400
-
-    conn.commit()
-    cur.close()
-    conn.close()
-    return jsonify(ok=True)
-
-
-@app.route("/api/match/status", methods=["POST"])
-def match_status():
-    data = request.get_json(force=True)
-    code = (data.get("code") or "").strip().upper()
-
-    conn = get_conn()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("SELECT * FROM matches WHERE code = %s", (code,))
-    m = cur.fetchone()
-    cur.close()
-    conn.close()
-    if not m:
-        return jsonify(ok=False, error="존재하지 않는 코드예요."), 404
-
-    return jsonify(
-        ok=True,
-        match={
-            "code": m["code"],
-            "player1": m["player1_nickname"],
-            "player1_cells": m["player1_cells"],
-            "player1_cpm": m["player1_cpm"],
-            "player1_accuracy": m["player1_accuracy"],
-            "player2": m["player2_nickname"],
-            "player2_cells": m["player2_cells"],
-            "player2_cpm": m["player2_cpm"],
-            "player2_accuracy": m["player2_accuracy"],
-        },
-    )
+    result = [
+        {"rank": i + 1, "nickname": r["nickname"], "cpm": r["cpm"], "cells": r["cells"]}
+        for i, r in enumerate(rows)
+    ]
+    return jsonify(ok=True, leaderboard=result)
 
 
 with app.app_context():
