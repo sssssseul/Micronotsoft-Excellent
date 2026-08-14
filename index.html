@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Micronotsoft Excellent - 통합 문서1</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='4' width='56' height='56' rx='10' fill='%230f7244'/%3E%3Crect x='14' y='14' width='36' height='36' rx='2' fill='%23ffffff'/%3E%3Cline x1='14' y1='26' x2='50' y2='26' stroke='%230f7244' stroke-width='2.5'/%3E%3Cline x1='14' y1='38' x2='50' y2='38' stroke='%230f7244' stroke-width='2.5'/%3E%3Cline x1='26' y1='14' x2='26' y2='50' stroke='%230f7244' stroke-width='2.5'/%3E%3Cline x1='38' y1='14' x2='38' y2='50' stroke='%230f7244' stroke-width='2.5'/%3E%3Cpath d='M18 18 L23.5 24.5 M23.5 18 L18 24.5' stroke='%230f7244' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
@@ -13,20 +14,18 @@
     overflow: hidden;
     user-select: none;
   }
-  body { display: flex; align-items: center; justify-content: center; padding: 6px; }
+  body { display: flex; align-items: stretch; justify-content: stretch; padding: 0; }
 
   .window {
-    width: 100%;
-    max-width: 780px;
-    height: 100%;
-    max-height: 690px;
+    width: 100vw;
+    height: 100vh;
     background: #fff;
-    border-radius: 8px;
+    border-radius: 0;
     overflow: hidden;
-    box-shadow: 0 8px 28px rgba(0,0,0,0.35);
+    box-shadow: none;
     display: flex;
     flex-direction: column;
-    font-size: 12px;
+    font-size: 13px;
   }
 
   /* title bar - Win11 style, merged with quick access */
@@ -188,9 +187,9 @@
   }
   table.sheet th, table.sheet td {
     border: 1px solid #e2e2e2;
-    width: 62px;
-    height: 22px;
-    font-size: 11.5px;
+    width: 84px;
+    height: 26px;
+    font-size: 13px;
     text-align: center;
     padding: 0;
     overflow: hidden;
@@ -255,7 +254,7 @@
   #cellInput {
     position: absolute;
     font-family: "Segoe UI", "Malgun Gothic", Arial, sans-serif;
-    font-size: 11.5px;
+    font-size: 13px;
     text-align: center;
     border: 2px solid #0f7244;
     border-radius: 1px;
@@ -565,8 +564,8 @@
     "탕비실","커피믹스","프린터잼","와이파이","키보드워리어"
   ];
 
-  const ROWS = 30, COLS = 12;
-  const COLLETTERS = "ABCDEFGHIJKL";
+  const ROWS = 50, COLS = 20;
+  const COLLETTERS = "ABCDEFGHIJKLMNOPQRST";
   const gridwrap = document.getElementById('gridwrap');
   const cellInput = document.getElementById('cellInput');
   const fillHandle = document.getElementById('fillHandle');
