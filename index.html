@@ -392,6 +392,46 @@
   .stat-line { display: flex; justify-content: space-between; }
   .stat-line b { color: #0f7244; }
 
+  .loginfield {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #d6d6d6;
+    border-radius: 5px;
+    padding: 7px 9px;
+    font-size: 12px;
+    font-family: inherit;
+    margin-bottom: 8px;
+  }
+  .loginerr {
+    color: #c0392b;
+    font-size: 11px;
+    min-height: 14px;
+    margin: -2px 0 6px;
+  }
+  .switchuser {
+    font-size: 10.5px;
+    color: #0f7244;
+    cursor: pointer;
+    text-align: center;
+    margin-top: 4px;
+  }
+  .historybtn {
+    background: none;
+    border: 1px solid #cfcfcf;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 10.5px;
+    color: #0f7244;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .history-dialog { width: 420px; max-width: 92vw; }
+  .history-summary { display: flex; gap: 16px; padding: 4px 16px 10px; font-size: 11.5px; color: #444; }
+  .history-summary b { color: #0f7244; font-size: 15px; display: block; }
+  .history-list { max-height: 160px; overflow-y: auto; margin: 0 16px 12px; border-top: 1px solid #eee; }
+  .history-row { display: flex; justify-content: space-between; padding: 5px 2px; font-size: 11px; border-bottom: 1px solid #f2f2f2; color: #333; }
+  .history-empty { text-align: center; color: #999; font-size: 11.5px; padding: 20px 0; }
+
   ::-webkit-scrollbar { width: 14px; height: 14px; }
   ::-webkit-scrollbar-track { background: #fff; }
   ::-webkit-scrollbar-thumb { background: #d6d6d6; border-radius: 7px; border: 3px solid #fff; }
@@ -516,6 +556,7 @@
       <span>완료 셀: <b id="statCells">0</b></span>
       <span>정확도: <b id="statAcc">100%</b></span>
       <span class="timeleft">남은시간: <b id="statTime">60</b>초</span>
+      <button class="historybtn" id="historyBtn">📈 내 기록</button>
     </div>
   </div>
 
@@ -529,10 +570,15 @@
           <div>60초 동안<br>셀을 최대한 채워보세요!</div>
         </div>
         회색 글씨로 표시된 단어를<br>셀 안에 그대로 입력하세요.
+        <input class="loginfield" id="nicknameInput" placeholder="닉네임" maxlength="20">
+        <input class="loginfield" id="passwordInput" type="password" placeholder="비밀번호 (4자 이상)" maxlength="40">
+        <div class="loginerr" id="loginErr"></div>
       </div>
       <div class="dialog-btns">
         <button class="winbtn" id="startBtn">시작</button>
       </div>
+      <div class="switchuser" id="switchUser" style="display:none;">다른 닉네임으로 시작</div>
+      <div style="height:10px;"></div>
     </div>
   </div>
 
@@ -552,6 +598,19 @@
       <div class="dialog-btns">
         <button class="winbtn secondary" id="closeBtn">닫기</button>
         <button class="winbtn" id="retryBtn">다시하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- history dialog -->
+  <div class="overlay" id="historyOverlay" style="display:none;">
+    <div class="dialog history-dialog">
+      <div class="dialog-title">내 기록 추이 - <span id="historyNick"></span></div>
+      <div class="history-summary" id="historySummary"></div>
+      <canvas id="historyChart" width="380" height="140" style="display:block;margin:0 16px 10px;"></canvas>
+      <div class="history-list" id="historyList"></div>
+      <div class="dialog-btns">
+        <button class="winbtn secondary" id="historyCloseBtn">닫기</button>
       </div>
     </div>
   </div>
@@ -582,6 +641,197 @@
   const statTime = document.getElementById('statTime');
   const startOverlay = document.getElementById('startOverlay');
   const resultOverlay = document.getElementById('resultOverlay');
+  const historyBtn = document.getElementById('historyBtn');
+  const historyOverlay = document.getElementById('historyOverlay');
+  const historyCloseBtn = document.getElementById('historyCloseBtn');
+  const nicknameInput = document.getElementById('nicknameInput');
+  const passwordInput = document.getElementById('passwordInput');
+  const loginErr = document.getElementById('loginErr');
+  const switchUser = document.getElementById('switchUser');
+
+  let account = null; // {nickname, password}
+
+  function loadSavedAccount(){
+    try {
+      const saved = JSON.parse(localStorage.getItem('mce_account') || 'null');
+      if (saved && saved.nickname && saved.password) {
+        account = saved;
+        nicknameInput.value = saved.nickname;
+        passwordInput.value = saved.password;
+        nicknameInput.style.display = 'none';
+        passwordInput.style.display = 'none';
+        switchUser.style.display = 'block';
+      }
+    } catch(e) {}
+  }
+
+  switchUser.addEventListener('click', () => {
+    account = null;
+    localStorage.removeItem('mce_account');
+    nicknameInput.value = '';
+    passwordInput.value = '';
+    nicknameInput.style.display = 'block';
+    passwordInput.style.display = 'block';
+    switchUser.style.display = 'none';
+    loginErr.textContent = '';
+  });
+
+  async function doLogin(){
+    const nickname = nicknameInput.value.trim();
+    const password = passwordInput.value;
+    if (account && account.nickname === nickname && account.password === password) {
+      return true;
+    }
+    if (!nickname || !password) {
+      loginErr.textContent = '닉네임과 비밀번호를 입력해주세요.';
+      return false;
+    }
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname, password })
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        loginErr.textContent = data.error || '로그인에 실패했습니다.';
+        return false;
+      }
+      account = { nickname, password };
+      localStorage.setItem('mce_account', JSON.stringify(account));
+      loginErr.textContent = '';
+      return true;
+    } catch (e) {
+      loginErr.textContent = '서버에 연결할 수 없습니다.';
+      return false;
+    }
+  }
+
+  async function saveScoreToServer(cells, cpm, accuracy){
+    if (!account) return;
+    try {
+      await fetch('/api/save_score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname: account.nickname, password: account.password, cells, cpm, accuracy })
+      });
+    } catch(e) {}
+  }
+
+  function fmtDate(iso){
+    const d = new Date(iso);
+    return (d.getMonth()+1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  }
+
+  function drawChart(rows){
+    const canvas = document.getElementById('historyChart');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+    if (rows.length === 0) return;
+    const padL = 32, padR = 10, padT = 10, padB = 20;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const cpms = rows.map(r => r.cpm);
+    let maxCpm = Math.max(...cpms, 10);
+    maxCpm = Math.ceil(maxCpm / 10) * 10;
+
+    ctx.strokeStyle = '#e5e5e5';
+    ctx.fillStyle = '#999';
+    ctx.font = '9px Segoe UI, Arial';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+      const y = padT + plotH - (plotH * i / 4);
+      ctx.beginPath();
+      ctx.moveTo(padL, y);
+      ctx.lineTo(W - padR, y);
+      ctx.stroke();
+      ctx.fillText(Math.round(maxCpm * i / 4), 2, y + 3);
+    }
+
+    const stepX = rows.length > 1 ? plotW / (rows.length - 1) : 0;
+    ctx.strokeStyle = '#0f7244';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    rows.forEach((r, i) => {
+      const x = padL + stepX * i;
+      const y = padT + plotH - (plotH * r.cpm / maxCpm);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    ctx.fillStyle = '#0f7244';
+    rows.forEach((r, i) => {
+      const x = padL + stepX * i;
+      const y = padT + plotH - (plotH * r.cpm / maxCpm);
+      ctx.beginPath();
+      ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    ctx.fillStyle = '#999';
+    ctx.font = '9px Segoe UI, Arial';
+    ctx.fillText(fmtDate(rows[0].played_at), padL, H - 4);
+    if (rows.length > 1) {
+      const lastLabel = fmtDate(rows[rows.length-1].played_at);
+      ctx.fillText(lastLabel, W - padR - ctx.measureText(lastLabel).width, H - 4);
+    }
+  }
+
+  async function openHistory(){
+    if (!account) {
+      startOverlay.style.display = 'flex';
+      resultOverlay.style.display = 'none';
+      loginErr.textContent = '먼저 닉네임으로 시작해주세요.';
+      return;
+    }
+    document.getElementById('historyNick').textContent = account.nickname;
+    const summary = document.getElementById('historySummary');
+    const list = document.getElementById('historyList');
+    summary.innerHTML = '';
+    list.innerHTML = '<div class="history-empty">불러오는 중...</div>';
+    historyOverlay.style.display = 'flex';
+
+    try {
+      const res = await fetch('/api/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname: account.nickname, password: account.password })
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        list.innerHTML = '<div class="history-empty">기록을 불러올 수 없습니다.</div>';
+        return;
+      }
+      const rows = data.history;
+      if (rows.length === 0) {
+        list.innerHTML = '<div class="history-empty">아직 플레이 기록이 없어요.</div>';
+        drawChart([]);
+        return;
+      }
+      const bestCpm = Math.max(...rows.map(r => r.cpm));
+      const bestCells = Math.max(...rows.map(r => r.cells));
+      const avgAcc = Math.round(rows.reduce((s,r)=>s+r.accuracy,0) / rows.length);
+      summary.innerHTML =
+        '<div>최고 타수<b>' + bestCpm + '</b></div>' +
+        '<div>최고 완료셀<b>' + bestCells + '</b></div>' +
+        '<div>평균 정확도<b>' + avgAcc + '%</b></div>' +
+        '<div>플레이 횟수<b>' + rows.length + '</b></div>';
+
+      drawChart(rows);
+
+      list.innerHTML = rows.slice().reverse().map(r =>
+        '<div class="history-row"><span>' + fmtDate(r.played_at) + '</span>' +
+        '<span>셀 ' + r.cells + '</span><span>' + r.cpm + ' 타/분</span><span>' + r.accuracy + '%</span></div>'
+      ).join('');
+    } catch(e) {
+      list.innerHTML = '<div class="history-empty">서버에 연결할 수 없습니다.</div>';
+    }
+  }
+
+  historyBtn.addEventListener('click', openHistory);
+  historyCloseBtn.addEventListener('click', () => { historyOverlay.style.display = 'none'; });
+  loadSavedAccount();
+
 
   let cells = [];
   let cellIndex = 0;
@@ -740,9 +990,12 @@
     document.getElementById('resCpm').textContent = cpm;
     document.getElementById('resAcc').textContent = acc + '%';
     resultOverlay.style.display = 'flex';
+    saveScoreToServer(completedCells, cpm, acc);
   }
 
-  document.getElementById('startBtn').addEventListener('click', () => {
+  document.getElementById('startBtn').addEventListener('click', async () => {
+    const ok = await doLogin();
+    if (!ok) return;
     startOverlay.style.display = 'none';
     startGame();
   });
