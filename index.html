@@ -569,7 +569,7 @@
       <span>정확도: <b id="statAcc">100%</b></span>
       <span class="timeleft">남은시간: <b id="statTime">60</b>초</span>
       <button class="historybtn" id="historyBtn">📈 내 기록</button>
-      <button class="historybtn" id="matchBtn">🆚 대결</button>
+      <button class="historybtn" id="matchBtn">🏆 순위</button>
     </div>
   </div>
 
@@ -589,8 +589,10 @@
         <input class="loginfield" id="passwordInput" type="password" placeholder="비밀번호 (4자 이상)" maxlength="40">
         <div class="loginerr" id="loginErr"></div>
       </div>
-      <div class="dialog-btns">
-        <button class="winbtn" id="startBtn">시작</button>
+      <div class="dialog-btns" style="flex-direction:column; align-items:stretch;">
+        <button class="winbtn" id="startBtn">🔁 게임 시작</button>
+        <button class="winbtn secondary" id="startHistoryBtn">📈 내 기록 보기</button>
+        <button class="winbtn secondary" id="startMatchBtn">🏆 전체 순위 보기</button>
       </div>
       <div class="switchuser" id="switchUser" style="display:none;">다른 닉네임으로 시작</div>
       <div style="height:10px;"></div>
@@ -613,7 +615,7 @@
       <div class="dialog-btns" style="flex-direction:column; align-items:stretch;">
         <button class="winbtn" id="retryBtn">🔁 다시 시작하기</button>
         <button class="winbtn secondary" id="resHistoryBtn">📈 내 기록 보기</button>
-        <button class="winbtn secondary" id="resMatchBtn">🆚 친구와 대결하기</button>
+        <button class="winbtn secondary" id="resMatchBtn">🏆 전체 순위 보기</button>
         <button class="winbtn secondary" id="closeBtn">닫기</button>
       </div>
     </div>
@@ -635,21 +637,9 @@
   <!-- match dialog -->
   <div class="overlay" id="matchOverlay" style="display:none;">
     <div class="dialog">
-      <div class="dialog-title">🆚 친구와 대결</div>
+      <div class="dialog-title">🏆 전체 순위</div>
       <div class="dialog-body" id="matchBody"></div>
       <div class="dialog-btns" id="matchBtns"></div>
-    </div>
-  </div>
-
-  <!-- match result dialog -->
-  <div class="overlay" id="matchResultOverlay" style="display:none;">
-    <div class="dialog">
-      <div class="dialog-title">🆚 대결 결과</div>
-      <div class="dialog-body" id="matchResultText" style="font-size:12.5px; line-height:1.9;"></div>
-      <div class="dialog-btns">
-        <button class="winbtn secondary" id="matchResultRefreshBtn">새로고침</button>
-        <button class="winbtn" id="matchResultCloseBtn">닫기</button>
-      </div>
     </div>
   </div>
 </div>
@@ -877,11 +867,8 @@
   });
   historyCloseBtn.addEventListener('click', () => { historyOverlay.style.display = 'none'; });
 
-  // ---- versus match feature ----
+  // ---- leaderboard (전체 순위) ----
   const matchOverlay = document.getElementById('matchOverlay');
-  const matchResultOverlay = document.getElementById('matchResultOverlay');
-  let currentMatchCode = null;
-  let matchModeActive = false;
 
   function needLoginForMatch(){
     matchOverlay.style.display = 'none';
@@ -892,138 +879,42 @@
   function openMatchDialog(){
     if (!account) { needLoginForMatch(); return; }
     matchOverlay.style.display = 'flex';
-    renderMatchChoose();
+    loadLeaderboard();
   }
 
-  function renderMatchChoose(){
-    document.getElementById('matchBody').innerHTML =
-      '<div style="margin-bottom:6px;">친구와 똑같은 단어 순서로 대결해요.</div>' +
-      '<div style="color:#8a8a8a; font-size:11px;">코드를 만들어서 공유하거나, 받은 코드로 참가하세요.</div>';
-    document.getElementById('matchBtns').innerHTML =
-      '<button class="winbtn secondary" id="mcClose">닫기</button>' +
-      '<button class="winbtn secondary" id="mcJoin">코드로 참가</button>' +
-      '<button class="winbtn" id="mcCreate">새 대결 만들기</button>';
-    document.getElementById('mcClose').onclick = () => { matchOverlay.style.display = 'none'; };
-    document.getElementById('mcJoin').onclick = renderMatchJoinInput;
-    document.getElementById('mcCreate').onclick = handleCreateMatch;
-  }
-
-  function renderMatchJoinInput(){
-    document.getElementById('matchBody').innerHTML =
-      '<div style="margin-bottom:8px;">친구에게 받은 코드를 입력하세요.</div>' +
-      '<input class="loginfield" id="joinCodeInput" placeholder="예: AB12CD" maxlength="6" style="text-transform:uppercase;">' +
-      '<div class="loginerr" id="matchErr"></div>';
-    document.getElementById('matchBtns').innerHTML =
-      '<button class="winbtn secondary" id="mcBack">뒤로</button>' +
-      '<button class="winbtn" id="mcJoinGo">참가하기</button>';
-    document.getElementById('mcBack').onclick = renderMatchChoose;
-    document.getElementById('mcJoinGo').onclick = handleJoinMatch;
-  }
-
-  async function handleCreateMatch(){
+  async function loadLeaderboard(){
+    document.getElementById('matchBody').innerHTML = '<div class="history-empty">불러오는 중...</div>';
+    document.getElementById('matchBtns').innerHTML = '<button class="winbtn secondary" id="lbClose">닫기</button>';
+    document.getElementById('lbClose').onclick = () => { matchOverlay.style.display = 'none'; };
     try {
-      const res = await fetch('/api/match/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nickname: account.nickname, password: account.password })
-      });
+      const res = await fetch('/api/leaderboard');
       const data = await res.json();
-      if (!data.ok) { alert(data.error || '대결을 만들 수 없어요.'); return; }
-      currentMatchCode = data.code;
-      renderMatchLobby(null);
-    } catch(e) { alert('서버에 연결할 수 없습니다.'); }
-  }
-
-  async function handleJoinMatch(){
-    const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
-    if (!code) return;
-    try {
-      const res = await fetch('/api/match/join', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, nickname: account.nickname, password: account.password })
-      });
-      const data = await res.json();
-      if (!data.ok) { document.getElementById('matchErr').textContent = data.error || '참가할 수 없어요.'; return; }
-      currentMatchCode = code;
-      renderMatchLobby(data.opponent);
+      if (!data.ok || data.leaderboard.length === 0) {
+        document.getElementById('matchBody').innerHTML = '<div class="history-empty">아직 기록이 없어요.</div>';
+        return;
+      }
+      const rows = data.leaderboard;
+      const myRow = rows.find(r => r.nickname === account.nickname);
+      let html = '';
+      if (myRow) {
+        html += '<div style="text-align:center; margin-bottom:12px;">내 등수 <b style="color:#0f7244; font-size:20px; margin-left:4px;">' + myRow.rank + '위</b></div>';
+      } else {
+        html += '<div style="text-align:center; margin-bottom:12px; color:#8a8a8a; font-size:11px;">아직 랭킹에 없어요. 게임을 플레이해보세요!</div>';
+      }
+      html += '<div class="history-list" style="margin:0; max-height:240px;">' +
+        rows.map(r => {
+          const mine = r.nickname === account.nickname;
+          return '<div class="history-row"' + (mine ? ' style="background:#eaf6ef; font-weight:700; color:#0f5c33;"' : '') + '>' +
+            '<span>' + r.rank + '위</span><span>' + r.nickname + '</span><span>' + r.cpm + ' 타/분</span><span>셀 ' + r.cells + '</span></div>';
+        }).join('') +
+        '</div>';
+      document.getElementById('matchBody').innerHTML = html;
     } catch(e) {
-      document.getElementById('matchErr').textContent = '서버에 연결할 수 없습니다.';
+      document.getElementById('matchBody').innerHTML = '<div class="history-empty">서버에 연결할 수 없습니다.</div>';
     }
   }
 
-  function renderMatchLobby(opponent){
-    document.getElementById('matchBody').innerHTML =
-      '<div style="margin-bottom:6px; color:#8a8a8a; font-size:11px;">대결 코드</div>' +
-      '<div style="font-size:22px; font-weight:700; color:#0f7244; letter-spacing:3px; margin-bottom:10px;">' + currentMatchCode + '</div>' +
-      (opponent
-        ? ('<div>상대: <b>' + opponent + '</b></div>')
-        : '<div style="color:#8a8a8a; font-size:11px;">이 코드를 친구에게 공유하세요. 친구가 아직 참가하지 않아도 바로 시작할 수 있어요.</div>');
-    document.getElementById('matchBtns').innerHTML =
-      '<button class="winbtn secondary" id="mcClose2">닫기</button>' +
-      '<button class="winbtn" id="mcStart">게임 시작</button>';
-    document.getElementById('mcClose2').onclick = () => { matchOverlay.style.display = 'none'; };
-    document.getElementById('mcStart').onclick = () => {
-      matchOverlay.style.display = 'none';
-      matchRng = mulberry32(seedFromCode(currentMatchCode));
-      matchModeActive = true;
-      startGame();
-    };
-  }
-
-  async function submitMatchResult(cells, cpm, accuracy){
-    if (!currentMatchCode || !account) return;
-    try {
-      await fetch('/api/match/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: currentMatchCode, nickname: account.nickname, password: account.password, cells, cpm, accuracy })
-      });
-    } catch(e) {}
-    showMatchResult();
-  }
-
-  async function showMatchResult(){
-    try {
-      const res = await fetch('/api/match/status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: currentMatchCode })
-      });
-      const data = await res.json();
-      if (!data.ok) return;
-      const m = data.match;
-      const isP1 = m.player1 === account.nickname;
-      const me = isP1
-        ? { nick: m.player1, cpm: m.player1_cpm, cells: m.player1_cells, acc: m.player1_accuracy }
-        : { nick: m.player2, cpm: m.player2_cpm, cells: m.player2_cells, acc: m.player2_accuracy };
-      const opp = isP1
-        ? { nick: m.player2, cpm: m.player2_cpm, cells: m.player2_cells, acc: m.player2_accuracy }
-        : { nick: m.player1, cpm: m.player1_cpm, cells: m.player1_cells, acc: m.player1_accuracy };
-
-      let html = '<div style="margin-bottom:8px;">코드: <b>' + currentMatchCode + '</b></div>';
-      html += '<div class="stat-line">나 (' + me.nick + ')<b>' + (me.cpm ?? '-') + ' 타/분</b></div>';
-      if (!opp.nick) {
-        html += '<div style="margin-top:10px; color:#8a8a8a; font-size:11px;">상대방이 아직 이 코드로 참가하지 않았어요. 코드를 공유해보세요.</div>';
-      } else if (opp.cpm === null || opp.cpm === undefined) {
-        html += '<div class="stat-line">상대 (' + opp.nick + ')<b>대기중</b></div>';
-        html += '<div style="margin-top:10px; color:#8a8a8a; font-size:11px;">상대방이 아직 플레이하지 않았어요. 나중에 [🆚 대결]에서 새로고침 해보세요.</div>';
-      } else {
-        html += '<div class="stat-line">상대 (' + opp.nick + ')<b>' + opp.cpm + ' 타/분</b></div>';
-        let verdict;
-        if (me.cpm > opp.cpm) verdict = '🎉 승리했어요!';
-        else if (me.cpm < opp.cpm) verdict = '아쉽지만 패배예요.';
-        else verdict = '무승부예요!';
-        html += '<div style="margin-top:10px; font-weight:700; color:#0f7244;">' + verdict + '</div>';
-      }
-      document.getElementById('matchResultText').innerHTML = html;
-      matchResultOverlay.style.display = 'flex';
-    } catch(e) {}
-  }
-
   document.getElementById('matchBtn').addEventListener('click', openMatchDialog);
-  document.getElementById('matchResultCloseBtn').addEventListener('click', () => { matchResultOverlay.style.display = 'none'; });
-  document.getElementById('matchResultRefreshBtn').addEventListener('click', showMatchResult);
 
   loadSavedAccount();
 
@@ -1056,23 +947,7 @@
     cells = Array.from(sheetTable.querySelectorAll('td[data-r]'));
   }
 
-  function mulberry32(seed){
-    return function(){
-      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
-      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-  }
-  function seedFromCode(code){
-    let h = 0;
-    for (let i = 0; i < code.length; i++) h = (h * 31 + code.charCodeAt(i)) >>> 0;
-    return h;
-  }
-  let matchRng = null;
-
   function randomWord(){
-    if (matchRng) return WORDS[Math.floor(matchRng() * WORDS.length)];
     return WORDS[Math.floor(Math.random() * WORDS.length)];
   }
 
@@ -1209,26 +1084,28 @@
     document.getElementById('resCpm').textContent = cpm;
     document.getElementById('resAcc').textContent = acc + '%';
     saveScoreToServer(completedCells, cpm, acc);
-    if (matchModeActive) {
-      matchModeActive = false;
-      matchRng = null;
-      submitMatchResult(completedCells, cpm, acc);
-    } else {
-      resultOverlay.style.display = 'flex';
-    }
+    resultOverlay.style.display = 'flex';
   }
 
   document.getElementById('startBtn').addEventListener('click', async () => {
     const ok = await doLogin();
     if (!ok) return;
-    matchModeActive = false;
-    matchRng = null;
     startOverlay.style.display = 'none';
     startGame();
   });
+  document.getElementById('startHistoryBtn').addEventListener('click', async () => {
+    const ok = await doLogin();
+    if (!ok) return;
+    startOverlay.style.display = 'none';
+    openHistory();
+  });
+  document.getElementById('startMatchBtn').addEventListener('click', async () => {
+    const ok = await doLogin();
+    if (!ok) return;
+    startOverlay.style.display = 'none';
+    openMatchDialog();
+  });
   document.getElementById('retryBtn').addEventListener('click', () => {
-    matchModeActive = false;
-    matchRng = null;
     resultOverlay.style.display = 'none';
     startGame();
   });
