@@ -270,6 +270,7 @@
     z-index: 6;
     caret-color: #000;
   }
+  #cellInput.ok { background: rgba(70,130,220,0.28); }
   #cellInput.err { background: rgba(230,80,80,0.28); }
   #fillHandle {
     position: absolute;
@@ -658,6 +659,7 @@
     positionInput();
     cellInput.value = '';
     cellInput.classList.remove('err');
+    cellInput.classList.remove('ok');
     formulacontent.textContent = '';
     fillHandle.style.display = 'block';
     cellInput.focus();
@@ -689,11 +691,14 @@
       if (val[idx] === target[idx]) {
         correctKeys++;
         cellInput.classList.remove('err');
+        cellInput.classList.add('ok');
       } else {
+        cellInput.classList.remove('ok');
         cellInput.classList.add('err');
       }
     } else {
       cellInput.classList.remove('err');
+      cellInput.classList.remove('ok');
     }
     prevLen = val.length;
     updateAcc();
