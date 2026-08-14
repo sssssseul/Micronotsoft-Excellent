@@ -249,7 +249,6 @@
   }
   .cell-ghost {
     color: #b9b9b9;
-    letter-spacing: 0.5px;
   }
   .cell-active {
     background: #fff !important;
@@ -260,7 +259,7 @@
     font-family: "Segoe UI", "Malgun Gothic", Arial, sans-serif;
     font-size: 13px;
     text-align: left;
-    padding-left: 6px;
+    padding-left: 7px;
     border: none;
     outline: 2px solid #0f7244;
     outline-offset: -2px;
@@ -651,7 +650,6 @@
     namebox.textContent = cellRef(td);
     target = randomWord();
     td.textContent = target;
-    td.style.color = '';
     td.classList.add('cell-ghost');
     prevLen = 0;
 
@@ -684,7 +682,6 @@
   cellInput.addEventListener('input', () => {
     const val = cellInput.value;
     formulacontent.textContent = val;
-    cells[cellIndex].style.color = val.length > 0 ? 'transparent' : '';
     if (val.length > prevLen) {
       const idx = val.length - 1;
       totalKeys++;
