@@ -1074,6 +1074,9 @@
   window.addEventListener('resize', () => { if (cells.length) positionInput(); });
   gridwrap.addEventListener('scroll', () => { if (cells.length) positionInput(); });
 
+  let gameStartTime = null;
+  let gameActive = false;
+
   function startGame(){
     resultOverlay.style.display = 'none';
     buildGrid();
@@ -1085,25 +1088,37 @@
     cellInput.disabled = false;
     setActiveCell(0);
     clearInterval(timer);
+    gameStartTime = Date.now();
+    gameActive = true;
     timer = setInterval(() => {
-      timeLeft--;
-      statTime.textContent = timeLeft;
-      if (timeLeft <= 0) endGame();
-    }, 1000);
+      const elapsed = (Date.now() - gameStartTime) / 1000;
+      const remain = Math.max(0, Math.ceil(60 - elapsed));
+      statTime.textContent = remain;
+      if (elapsed >= 60) endGame();
+    }, 200);
   }
 
   function endGame(){
+    if (!gameActive) return;
+    gameActive = false;
     clearInterval(timer);
     cellInput.disabled = true;
     fillHandle.style.display = 'none';
     const acc = updateAcc();
-    const cpm = correctKeys;
+    const elapsedMinutes = Math.max((Date.now() - gameStartTime) / 60000, 1 / 60);
+    const cpm = Math.round(correctKeys / elapsedMinutes);
     document.getElementById('resCells').textContent = completedCells;
     document.getElementById('resCpm').textContent = cpm;
     document.getElementById('resAcc').textContent = acc + '%';
     saveScoreToServer(completedCells, cpm, acc);
     resultOverlay.style.display = 'flex';
   }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && gameActive) {
+      endGame();
+    }
+  });
 
   document.getElementById('startBtn').addEventListener('click', async () => {
     const ok = await doLogin();
