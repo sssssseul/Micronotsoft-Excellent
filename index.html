@@ -329,9 +329,10 @@
     color: #555;
   }
   .statusbar .left { display: flex; align-items: center; gap: 10px; }
-  .statgame { display: flex; gap: 12px; }
+  .statgame { display: flex; align-items: center; gap: 10px; }
   .statgame b { color: #0f7244; }
   .timeleft b { color: #c0392b; }
+  .statgame > span { line-height: 1; }
 
   /* modal overlay */
   .overlay {
@@ -433,6 +434,7 @@
     border-radius: 4px;
     padding: 2px 8px;
     font-size: 10.5px;
+    line-height: 1.4;
     color: #0f7244;
     cursor: pointer;
     font-family: inherit;
@@ -850,8 +852,23 @@
 
       list.innerHTML = rows.slice().reverse().map(r =>
         '<div class="history-row"><span>' + fmtDate(r.played_at) + '</span>' +
-        '<span>셀 ' + r.cells + '</span><span>' + r.cpm + ' 타/분</span><span>' + r.accuracy + '%</span></div>'
+        '<span>셀 ' + r.cells + '</span><span>' + r.cpm + ' 타/분</span><span>' + r.accuracy + '%</span>' +
+        '<span class="del-score-btn" data-id="' + r.id + '" style="color:#c0392b; cursor:pointer; font-weight:700;">✕</span></div>'
       ).join('');
+
+      list.querySelectorAll('.del-score-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('이 기록을 삭제할까요?')) return;
+          try {
+            await fetch('/api/delete_score', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ nickname: account.nickname, password: account.password, id: btn.dataset.id })
+            });
+          } catch(e) {}
+          openHistory();
+        });
+      });
     } catch(e) {
       list.innerHTML = '<div class="history-empty">서버에 연결할 수 없습니다.</div>';
     }
