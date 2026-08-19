@@ -568,6 +568,7 @@
       <span>완료 셀: <b id="statCells">0</b></span>
       <span>정확도: <b id="statAcc">100%</b></span>
       <span class="timeleft">남은시간: <b id="statTime">60</b>초</span>
+      <button class="historybtn" id="retryStatusBtn">🔁 재시도</button>
       <button class="historybtn" id="historyBtn">📈 내 기록</button>
       <button class="historybtn" id="matchBtn">🏆 순위</button>
     </div>
@@ -857,6 +858,10 @@
   }
 
   historyBtn.addEventListener('click', openHistory);
+  document.getElementById('retryStatusBtn').addEventListener('click', () => {
+    if (!account) { needLoginForMatch(); return; }
+    startGame();
+  });
   document.getElementById('resHistoryBtn').addEventListener('click', () => {
     resultOverlay.style.display = 'none';
     openHistory();
@@ -947,8 +952,19 @@
     cells = Array.from(sheetTable.querySelectorAll('td[data-r]'));
   }
 
+  let wordBag = [];
+
+  function refillWordBag(){
+    wordBag = WORDS.slice();
+    for (let i = wordBag.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [wordBag[i], wordBag[j]] = [wordBag[j], wordBag[i]];
+    }
+  }
+
   function randomWord(){
-    return WORDS[Math.floor(Math.random() * WORDS.length)];
+    if (wordBag.length === 0) refillWordBag();
+    return wordBag.pop();
   }
 
   function cellRef(td){
@@ -1059,7 +1075,9 @@
   gridwrap.addEventListener('scroll', () => { if (cells.length) positionInput(); });
 
   function startGame(){
+    resultOverlay.style.display = 'none';
     buildGrid();
+    refillWordBag();
     completedCells = 0; totalKeys = 0; correctKeys = 0; timeLeft = 60;
     statCells.textContent = '0';
     statAcc.textContent = '100%';
