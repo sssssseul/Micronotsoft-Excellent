@@ -1122,7 +1122,9 @@
     cellInput.disabled = true;
     fillHandle.style.display = 'none';
     const acc = updateAcc();
-    const elapsedMinutes = Math.max((Date.now() - gameStartTime) / 60000, 1 / 60);
+    const rawElapsedMs = Date.now() - gameStartTime;
+    const cappedElapsedMs = Math.min(rawElapsedMs, 60000);
+    const elapsedMinutes = Math.max(cappedElapsedMs / 60000, 1 / 60);
     const cpm = Math.round(correctKeys / elapsedMinutes);
     document.getElementById('resCells').textContent = completedCells;
     document.getElementById('resCpm').textContent = cpm;
