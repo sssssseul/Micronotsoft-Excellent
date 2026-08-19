@@ -131,7 +131,7 @@ def history():
     conn = get_conn()
     cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute(
-        """SELECT cells, cpm, accuracy, played_at FROM scores
+        """SELECT id, cells, cpm, accuracy, played_at FROM scores
            WHERE nickname = %s ORDER BY played_at ASC""",
         (nickname,),
     )
@@ -141,6 +141,7 @@ def history():
 
     result = [
         {
+            "id": r["id"],
             "cells": r["cells"],
             "cpm": r["cpm"],
             "accuracy": r["accuracy"],
@@ -149,6 +150,31 @@ def history():
         for r in rows
     ]
     return jsonify(ok=True, history=result)
+
+
+@app.route("/api/delete_score", methods=["POST"])
+def delete_score():
+    data = request.get_json(force=True)
+    nickname = (data.get("nickname") or "").strip()
+    password = data.get("password") or ""
+    score_id = data.get("id")
+
+    if not verify_user(nickname, password):
+        return jsonify(ok=False, error="로그인 정보가 올바르지 않습니다."), 401
+    if not score_id:
+        return jsonify(ok=False, error="삭제할 기록을 찾을 수 없습니다."), 400
+
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "DELETE FROM scores WHERE id = %s AND nickname = %s",
+        (score_id, nickname),
+    )
+    deleted = cur.rowcount
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify(ok=True, deleted=deleted)
 
 
 @app.route("/api/leaderboard", methods=["GET"])
