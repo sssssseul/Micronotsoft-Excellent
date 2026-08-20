@@ -439,6 +439,11 @@
     cursor: pointer;
     font-family: inherit;
   }
+  .historybtn:disabled {
+    color: #b8b8b8;
+    border-color: #e2e2e2;
+    cursor: not-allowed;
+  }
   .history-dialog { width: 420px; max-width: 92vw; }
   .history-summary { display: flex; gap: 8px; padding: 4px 16px 12px; }
   .history-summary .stat-card {
@@ -962,6 +967,7 @@
 
   historyBtn.addEventListener('click', openHistory);
   document.getElementById('retryStatusBtn').addEventListener('click', () => {
+    if (document.getElementById('retryStatusBtn').disabled) return;
     if (!account) { needLoginForMatch(); return; }
     startGame();
   });
@@ -1086,6 +1092,8 @@
     sheetTab2.classList.remove('active');
     gridwrapEl.style.display = 'block';
     longPanel.style.display = 'none';
+    document.getElementById('retryStatusBtn').disabled = false;
+    document.getElementById('matchBtn').disabled = false;
   }
 
   function showSheet2(){
@@ -1098,6 +1106,8 @@
     longPanel.style.display = 'block';
     namebox.textContent = 'A1';
     formulacontent.textContent = '';
+    document.getElementById('retryStatusBtn').disabled = true;
+    document.getElementById('matchBtn').disabled = true;
     showLongList();
   }
 
