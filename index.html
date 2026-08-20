@@ -557,8 +557,14 @@
     <div id="fillHandle" style="display:none;"></div>
   </div>
 
-  <div class="gridwrap" id="longPanel" style="display:none; padding:16px; overflow-y:auto;">
-    <div id="longListView">
+  <div class="gridwrap" id="longPanel" style="display:none; padding:16px; overflow-y:auto;
+    background-image:
+      linear-gradient(to right, #e9e9e9 1px, transparent 1px),
+      linear-gradient(to bottom, #e9e9e9 1px, transparent 1px);
+    background-size: 84px 26px; background-color:#fff;">
+    <div id="longListView" style="background:#fff; border:1px solid #e2e2e2; border-radius:6px; padding:14px; box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+      <div class="howto-label">[게임 방법]</div>
+      <div class="howto-text">내가 등록한 글(가사 등)을 처음부터 끝까지<br>통째로 입력해서 걸린 시간과 타수를 재는 모드예요.</div>
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
         <div style="font-size:13px; font-weight:700; color:#333;">📄 내가 등록한 글</div>
         <button class="historybtn" id="longAddBtn">+ 새 글 등록</button>
@@ -566,7 +572,7 @@
       <div id="longTextList"></div>
     </div>
 
-    <div id="longAddView" style="display:none;">
+    <div id="longAddView" style="display:none; background:#fff; border:1px solid #e2e2e2; border-radius:6px; padding:14px; box-shadow:0 1px 4px rgba(0,0,0,0.06);">
       <div style="font-size:13px; font-weight:700; margin-bottom:10px; color:#333;">새 글 등록</div>
       <input class="loginfield" id="longTitleInput" placeholder="제목 (예: 좋아하는 노래 가사)" maxlength="60">
       <textarea class="loginfield" id="longContentInput" placeholder="여기에 긴 글이나 가사를 붙여넣으세요" style="height:200px; resize:vertical; font-family:inherit;"></textarea>
@@ -577,25 +583,25 @@
       </div>
     </div>
 
-    <div id="longPracticeView" style="display:none;">
+    <div id="longPracticeView" style="display:none; background:#fff; border:1px solid #e2e2e2; border-radius:6px; padding:14px; box-shadow:0 1px 4px rgba(0,0,0,0.06); height:calc(100% - 28px);">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <div style="font-size:13px; font-weight:700; color:#333;" id="longPracticeTitle"></div>
         <button class="historybtn" id="longPracticeQuit">그만두기</button>
       </div>
-      <div id="longPracticeArea" style="border:1px solid #e2e2e2; border-radius:6px; padding:14px; font-size:14px; line-height:1.9; white-space:pre-wrap; word-break:break-all; height:calc(100% - 90px); overflow-y:auto; background:#fff;">
+      <div id="longPracticeArea" style="border:1px solid #e2e2e2; border-radius:6px; padding:14px; font-size:14px; line-height:1.9; white-space:pre-wrap; word-break:break-all; height:calc(100% - 90px); overflow-y:auto; background:#fafafa;">
         <span id="longTypedSpan" style="color:#000;"></span><span id="longGhostSpan" style="color:#b9b9b9;"></span>
       </div>
       <textarea id="longInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-        style="position:absolute; opacity:0; height:1px; width:1px; pointer-events:none;"></textarea>
+        style="position:absolute; top:0; left:0; opacity:0; height:1px; width:1px; pointer-events:none;"></textarea>
       <div style="margin-top:8px; font-size:11px; color:#8a8a8a;">칸을 클릭하고 바로 타이핑을 시작하세요. 다 치면 자동으로 종료돼요.</div>
     </div>
 
-    <div id="longResultView" style="display:none; text-align:center; padding-top:40px;">
+    <div id="longResultView" style="display:none; text-align:center; padding-top:40px; background:#fff; border:1px solid #e2e2e2; border-radius:6px; box-shadow:0 1px 4px rgba(0,0,0,0.06);">
       <div style="font-size:15px; font-weight:700; color:#0f7244; margin-bottom:16px;">🎉 완료!</div>
       <div class="stat-line" style="max-width:220px; margin:0 auto;">걸린 시간<b id="longResTime">0초</b></div>
       <div class="stat-line" style="max-width:220px; margin:0 auto;">타수(CPM)<b id="longResCpm">0</b></div>
       <div class="stat-line" style="max-width:220px; margin:0 auto;">정확도<b id="longResAcc">0%</b></div>
-      <div style="margin-top:20px;">
+      <div style="margin-top:20px; padding-bottom:20px;">
         <button class="winbtn secondary" id="longResultBack">목록으로</button>
       </div>
     </div>
@@ -1113,6 +1119,7 @@
       longAddView.style.display = 'none';
       longResultView.style.display = 'none';
       longPracticeView.style.display = 'block';
+      longPanel.scrollTop = 0;
 
       document.getElementById('longTypedSpan').textContent = '';
       document.getElementById('longGhostSpan').textContent = longTarget;
