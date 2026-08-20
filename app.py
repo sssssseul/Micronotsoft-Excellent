@@ -204,6 +204,7 @@ def longtext_save():
     password = data.get("password") or ""
     title = (data.get("title") or "").strip()
     content = (data.get("content") or "").strip()
+    content = "\n".join(line.strip() for line in content.split("\n"))
 
     if not verify_user(nickname, password):
         return jsonify(ok=False, error="로그인 정보가 올바르지 않습니다."), 401
