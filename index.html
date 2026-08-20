@@ -1053,8 +1053,10 @@
     html += '</tr></thead><tbody>';
 
     html += '<tr><td class="rowhead">1</td>';
-    html += '<td colspan="' + LONG_MERGE_COLS + '" rowspan="' + LONG_MERGE_ROWS + '" id="longMergedCell" ' +
-      'style="vertical-align:top; padding:14px; position:relative; height:' + (LONG_MERGE_ROWS * 26) + 'px; overflow-y:auto; overflow-x:hidden;"></td>';
+    html += '<td colspan="' + LONG_MERGE_COLS + '" rowspan="' + LONG_MERGE_ROWS + '" ' +
+      'style="padding:0; position:relative; height:' + (LONG_MERGE_ROWS * 26) + 'px;">' +
+      '<div id="longMergedCell" style="height:100%; overflow-y:auto; overflow-x:hidden; padding:14px; box-sizing:border-box;"></div>' +
+      '</td>';
     for (let c = LONG_MERGE_COLS; c < LONG_COLS; c++) html += '<td></td>';
     html += '</tr>';
 
@@ -1208,7 +1210,7 @@
       const data = await res.json();
       if (!data.ok) { alert(data.error || '글을 불러올 수 없어요.'); return; }
       longTextId = data.text.id;
-      longTarget = data.text.content;
+      longTarget = data.text.content.split('\n').map(line => line.trim()).join('\n').replace(/^\n+|\n+$/g, '');
       document.getElementById('longPracticeTitle').textContent = data.text.title;
 
       longListView.style.display = 'none';
