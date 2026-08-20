@@ -557,10 +557,54 @@
     <div id="fillHandle" style="display:none;"></div>
   </div>
 
+  <div class="gridwrap" id="longPanel" style="display:none; padding:16px; overflow-y:auto;">
+    <div id="longListView">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div style="font-size:13px; font-weight:700; color:#333;">📄 내가 등록한 글</div>
+        <button class="historybtn" id="longAddBtn">+ 새 글 등록</button>
+      </div>
+      <div id="longTextList"></div>
+    </div>
+
+    <div id="longAddView" style="display:none;">
+      <div style="font-size:13px; font-weight:700; margin-bottom:10px; color:#333;">새 글 등록</div>
+      <input class="loginfield" id="longTitleInput" placeholder="제목 (예: 좋아하는 노래 가사)" maxlength="60">
+      <textarea class="loginfield" id="longContentInput" placeholder="여기에 긴 글이나 가사를 붙여넣으세요" style="height:200px; resize:vertical; font-family:inherit;"></textarea>
+      <div class="loginerr" id="longAddErr"></div>
+      <div style="display:flex; gap:8px; margin-top:6px;">
+        <button class="winbtn secondary" id="longAddCancel">취소</button>
+        <button class="winbtn" id="longAddSave">저장</button>
+      </div>
+    </div>
+
+    <div id="longPracticeView" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div style="font-size:13px; font-weight:700; color:#333;" id="longPracticeTitle"></div>
+        <button class="historybtn" id="longPracticeQuit">그만두기</button>
+      </div>
+      <div id="longPracticeArea" style="border:1px solid #e2e2e2; border-radius:6px; padding:14px; font-size:14px; line-height:1.9; white-space:pre-wrap; word-break:break-all; height:calc(100% - 90px); overflow-y:auto; background:#fff;">
+        <span id="longTypedSpan" style="color:#000;"></span><span id="longGhostSpan" style="color:#b9b9b9;"></span>
+      </div>
+      <textarea id="longInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+        style="position:absolute; opacity:0; height:1px; width:1px; pointer-events:none;"></textarea>
+      <div style="margin-top:8px; font-size:11px; color:#8a8a8a;">칸을 클릭하고 바로 타이핑을 시작하세요. 다 치면 자동으로 종료돼요.</div>
+    </div>
+
+    <div id="longResultView" style="display:none; text-align:center; padding-top:40px;">
+      <div style="font-size:15px; font-weight:700; color:#0f7244; margin-bottom:16px;">🎉 완료!</div>
+      <div class="stat-line" style="max-width:220px; margin:0 auto;">걸린 시간<b id="longResTime">0초</b></div>
+      <div class="stat-line" style="max-width:220px; margin:0 auto;">타수(CPM)<b id="longResCpm">0</b></div>
+      <div class="stat-line" style="max-width:220px; margin:0 auto;">정확도<b id="longResAcc">0%</b></div>
+      <div style="margin-top:20px;">
+        <button class="winbtn secondary" id="longResultBack">목록으로</button>
+      </div>
+    </div>
+  </div>
+
   <div class="sheettabs">
     <div class="addtab">+</div>
-    <div class="tab active">Sheet1</div>
-    <div class="tab">Sheet2</div>
+    <div class="tab active" id="sheetTab1">Sheet1</div>
+    <div class="tab" id="sheetTab2">Sheet2</div>
     <div class="tab">Sheet3</div>
   </div>
 
@@ -937,6 +981,214 @@
   }
 
   document.getElementById('matchBtn').addEventListener('click', openMatchDialog);
+
+  // ---- 긴 글 모드 (Sheet2) ----
+  const gridwrapEl = document.getElementById('gridwrap');
+  const longPanel = document.getElementById('longPanel');
+  const sheetTab1 = document.getElementById('sheetTab1');
+  const sheetTab2 = document.getElementById('sheetTab2');
+  const longListView = document.getElementById('longListView');
+  const longAddView = document.getElementById('longAddView');
+  const longPracticeView = document.getElementById('longPracticeView');
+  const longResultView = document.getElementById('longResultView');
+  const longInput = document.getElementById('longInput');
+
+  function showSheet1(){
+    sheetTab1.classList.add('active');
+    sheetTab2.classList.remove('active');
+    gridwrapEl.style.display = 'block';
+    longPanel.style.display = 'none';
+  }
+
+  function showSheet2(){
+    if (!account) { needLoginForMatch(); return; }
+    sheetTab1.classList.remove('active');
+    sheetTab2.classList.add('active');
+    gridwrapEl.style.display = 'none';
+    longPanel.style.display = 'block';
+    showLongList();
+  }
+
+  sheetTab1.addEventListener('click', showSheet1);
+  sheetTab2.addEventListener('click', showSheet2);
+
+  function showLongList(){
+    longListView.style.display = 'block';
+    longAddView.style.display = 'none';
+    longPracticeView.style.display = 'none';
+    longResultView.style.display = 'none';
+    loadLongTextList();
+  }
+
+  async function loadLongTextList(){
+    const listEl = document.getElementById('longTextList');
+    listEl.innerHTML = '<div class="history-empty">불러오는 중...</div>';
+    try {
+      const res = await fetch('/api/longtext/list', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname: account.nickname, password: account.password })
+      });
+      const data = await res.json();
+      if (!data.ok) { listEl.innerHTML = '<div class="history-empty">불러올 수 없습니다.</div>'; return; }
+      if (data.texts.length === 0) {
+        listEl.innerHTML = '<div class="history-empty">아직 등록한 글이 없어요. "+ 새 글 등록"으로 추가해보세요.</div>';
+        return;
+      }
+      listEl.innerHTML = data.texts.map(t =>
+        '<div class="history-row" style="padding:10px 4px;">' +
+          '<span style="flex:1; font-weight:600; color:#333;">' + t.title + '</span>' +
+          '<span style="color:#8a8a8a;">' + t.len + '자</span>' +
+          '<span style="color:#0f7244;">최고 ' + t.best_cpm + '타/분</span>' +
+          '<span class="historybtn long-practice-btn" data-id="' + t.id + '" style="margin-left:8px;">연습</span>' +
+          '<span class="long-delete-btn" data-id="' + t.id + '" style="margin-left:8px; color:#c0392b; cursor:pointer; font-weight:700;">✕</span>' +
+        '</div>'
+      ).join('');
+      listEl.querySelectorAll('.long-practice-btn').forEach(btn => {
+        btn.addEventListener('click', () => startLongPractice(btn.dataset.id));
+      });
+      listEl.querySelectorAll('.long-delete-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('이 글을 삭제할까요?')) return;
+          await fetch('/api/longtext/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nickname: account.nickname, password: account.password, id: btn.dataset.id })
+          });
+          loadLongTextList();
+        });
+      });
+    } catch(e) {
+      listEl.innerHTML = '<div class="history-empty">서버에 연결할 수 없습니다.</div>';
+    }
+  }
+
+  document.getElementById('longAddBtn').addEventListener('click', () => {
+    longListView.style.display = 'none';
+    longAddView.style.display = 'block';
+    document.getElementById('longTitleInput').value = '';
+    document.getElementById('longContentInput').value = '';
+    document.getElementById('longAddErr').textContent = '';
+  });
+  document.getElementById('longAddCancel').addEventListener('click', showLongList);
+  document.getElementById('longAddSave').addEventListener('click', async () => {
+    const title = document.getElementById('longTitleInput').value.trim();
+    const content = document.getElementById('longContentInput').value.trim();
+    const errEl = document.getElementById('longAddErr');
+    if (!title || !content) { errEl.textContent = '제목과 내용을 입력해주세요.'; return; }
+    try {
+      const res = await fetch('/api/longtext/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname: account.nickname, password: account.password, title, content })
+      });
+      const data = await res.json();
+      if (!data.ok) { errEl.textContent = data.error || '저장할 수 없어요.'; return; }
+      showLongList();
+    } catch(e) {
+      errEl.textContent = '서버에 연결할 수 없습니다.';
+    }
+  });
+
+  let longTarget = '';
+  let longTextId = null;
+  let longStartTime = null;
+  let longTotalKeys = 0, longCorrectKeys = 0, longPrevLen = 0;
+  let longIsComposing = false;
+
+  async function startLongPractice(id){
+    try {
+      const res = await fetch('/api/longtext/get', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname: account.nickname, password: account.password, id })
+      });
+      const data = await res.json();
+      if (!data.ok) { alert(data.error || '글을 불러올 수 없어요.'); return; }
+      longTextId = data.text.id;
+      longTarget = data.text.content;
+      document.getElementById('longPracticeTitle').textContent = data.text.title;
+
+      longListView.style.display = 'none';
+      longAddView.style.display = 'none';
+      longResultView.style.display = 'none';
+      longPracticeView.style.display = 'block';
+
+      document.getElementById('longTypedSpan').textContent = '';
+      document.getElementById('longGhostSpan').textContent = longTarget;
+      longInput.value = '';
+      longStartTime = null;
+      longTotalKeys = 0; longCorrectKeys = 0; longPrevLen = 0;
+      longInput.disabled = false;
+      longInput.focus();
+    } catch(e) {
+      alert('서버에 연결할 수 없습니다.');
+    }
+  }
+
+  document.getElementById('longPracticeArea').addEventListener('click', () => longInput.focus());
+
+  longInput.addEventListener('compositionstart', () => { longIsComposing = true; });
+  longInput.addEventListener('compositionend', () => {
+    longIsComposing = false;
+    checkLongComplete();
+  });
+
+  longInput.addEventListener('input', (e) => {
+    if (longStartTime === null) longStartTime = Date.now();
+    const val = longInput.value;
+    const typedSpan = document.getElementById('longTypedSpan');
+    const ghostSpan = document.getElementById('longGhostSpan');
+    typedSpan.textContent = val;
+    ghostSpan.textContent = val.length < longTarget.length ? longTarget.slice(val.length) : '';
+
+    if (val.length > longPrevLen) {
+      const idx = val.length - 1;
+      longTotalKeys++;
+      if (val[idx] === longTarget[idx]) longCorrectKeys++;
+    }
+    longPrevLen = val.length;
+
+    const composing = e.isComposing || longIsComposing;
+    if (!composing) checkLongComplete();
+  });
+
+  function checkLongComplete(){
+    if (longInput.value === longTarget && longTarget.length > 0) {
+      finishLongPractice();
+    }
+  }
+
+  async function finishLongPractice(){
+    longInput.disabled = true;
+    const timeSeconds = Math.max((Date.now() - longStartTime) / 1000, 0.1);
+    const cpm = Math.round(longCorrectKeys / (timeSeconds / 60));
+    const accuracy = longTotalKeys === 0 ? 100 : Math.round((longCorrectKeys / longTotalKeys) * 100);
+
+    document.getElementById('longResTime').textContent = timeSeconds.toFixed(1) + '초';
+    document.getElementById('longResCpm').textContent = cpm;
+    document.getElementById('longResAcc').textContent = accuracy + '%';
+
+    longPracticeView.style.display = 'none';
+    longResultView.style.display = 'block';
+
+    try {
+      await fetch('/api/longtext/submit_score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nickname: account.nickname, password: account.password,
+          text_id: longTextId, time_seconds: timeSeconds, cpm, accuracy
+        })
+      });
+    } catch(e) {}
+  }
+
+  document.getElementById('longPracticeQuit').addEventListener('click', () => {
+    longInput.disabled = true;
+    showLongList();
+  });
+  document.getElementById('longResultBack').addEventListener('click', showLongList);
 
   loadSavedAccount();
 
