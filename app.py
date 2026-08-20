@@ -57,6 +57,14 @@ def init_db():
         );
     """)
     conn.commit()
+
+    cur.execute("SELECT id, content FROM long_texts")
+    for row_id, content in cur.fetchall():
+        fixed = "\n".join(line.strip() for line in content.split("\n"))
+        if fixed != content:
+            cur.execute("UPDATE long_texts SET content = %s WHERE id = %s", (fixed, row_id))
+    conn.commit()
+
     cur.close()
     conn.close()
 
