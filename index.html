@@ -709,6 +709,12 @@
       <div class="dialog-title">내 기록 추이 - <span id="historyNick"></span></div>
       <div class="history-summary" id="historySummary"></div>
       <canvas id="historyChart" width="380" height="140" style="display:block;margin:0 16px 10px;"></canvas>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin:0 16px 4px;">
+        <label style="font-size:10.5px; color:#666; display:flex; align-items:center; gap:4px; cursor:pointer;">
+          <input type="checkbox" id="historySelectAll"> 전체 선택
+        </label>
+        <button class="historybtn" id="historyBulkDeleteBtn" style="display:none; color:#c0392b; border-color:#e0b0b0;">선택 삭제</button>
+      </div>
       <div class="history-list" id="historyList"></div>
       <div class="dialog-btns">
         <button class="winbtn secondary" id="historyCloseBtn">닫기</button>
@@ -899,6 +905,8 @@
     const list = document.getElementById('historyList');
     summary.innerHTML = '';
     list.innerHTML = '<div class="history-empty">불러오는 중...</div>';
+    document.getElementById('historySelectAll').checked = false;
+    document.getElementById('historyBulkDeleteBtn').style.display = 'none';
     historyOverlay.style.display = 'flex';
 
     try {
@@ -930,10 +938,45 @@
       drawChart(rows);
 
       list.innerHTML = rows.slice().reverse().map(r =>
-        '<div class="history-row"><span>' + fmtDate(r.played_at) + '</span>' +
+        '<div class="history-row">' +
+        '<input type="checkbox" class="history-row-check" data-id="' + r.id + '" style="margin-right:6px;">' +
+        '<span>' + fmtDate(r.played_at) + '</span>' +
         '<span>셀 ' + r.cells + '</span><span>' + r.cpm + ' 타/분</span><span>' + r.accuracy + '%</span>' +
         '<span class="del-score-btn" data-id="' + r.id + '" style="color:#c0392b; cursor:pointer; font-weight:700;">✕</span></div>'
       ).join('');
+
+      const selectAllBox = document.getElementById('historySelectAll');
+      const bulkDeleteBtn = document.getElementById('historyBulkDeleteBtn');
+      selectAllBox.checked = false;
+      bulkDeleteBtn.style.display = 'none';
+
+      function updateBulkDeleteVisibility(){
+        const anyChecked = list.querySelectorAll('.history-row-check:checked').length > 0;
+        bulkDeleteBtn.style.display = anyChecked ? 'inline-block' : 'none';
+      }
+
+      list.querySelectorAll('.history-row-check').forEach(cb => {
+        cb.addEventListener('change', updateBulkDeleteVisibility);
+      });
+
+      selectAllBox.onchange = () => {
+        list.querySelectorAll('.history-row-check').forEach(cb => { cb.checked = selectAllBox.checked; });
+        updateBulkDeleteVisibility();
+      };
+
+      bulkDeleteBtn.onclick = async () => {
+        const ids = Array.from(list.querySelectorAll('.history-row-check:checked')).map(cb => cb.dataset.id);
+        if (ids.length === 0) return;
+        if (!confirm(ids.length + '개의 기록을 삭제할까요?')) return;
+        try {
+          await Promise.all(ids.map(id => fetch('/api/delete_score', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nickname: account.nickname, password: account.password, id })
+          })));
+        } catch(e) {}
+        openHistory();
+      };
 
       list.querySelectorAll('.del-score-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
