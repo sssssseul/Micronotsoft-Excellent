@@ -450,12 +450,8 @@
     margin-bottom: 8px;
   }
   .fake-caret {
-    display: inline-block;
-    width: 2px;
-    height: 1em;
-    vertical-align: text-bottom;
-    background: #0f7244;
-    margin: 0;
+    display: inline;
+    border-left: 2px solid #0f7244;
     animation: caret-blink 1s step-start infinite;
   }
   @keyframes caret-blink {
@@ -1289,7 +1285,6 @@
         .map(line => line.replace(/^[\s\u00A0\u3000]+|[\s\u00A0\u3000]+$/g, ''))
         .join('\n')
         .replace(/^\n+|\n+$/g, '');
-      alert('RAW: ' + JSON.stringify(data.text.content.slice(0, 60)) + '\n\nTRIMMED: ' + JSON.stringify(longTarget.slice(0, 60)));
       document.getElementById('longPracticeTitle').textContent = data.text.title;
 
       longListView.style.display = 'none';
