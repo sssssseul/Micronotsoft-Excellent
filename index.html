@@ -680,7 +680,7 @@
 
   <!-- history dialog -->
   <div class="overlay" id="historyOverlay" style="display:none;">
-    <div class="dialog history-dialog">
+    <div class="dialog history-dialog" style="max-height:85vh; overflow-y:auto;">
       <div class="dialog-title">내 기록 추이 - <span id="historyNick"></span></div>
       <div class="history-summary" id="historySummary"></div>
       <canvas id="historyChart" width="380" height="140" style="display:block;margin:0 16px 10px;"></canvas>
@@ -691,6 +691,10 @@
         <button class="historybtn" id="historyBulkDeleteBtn" style="display:none; color:#c0392b; border-color:#e0b0b0;">선택 삭제</button>
       </div>
       <div class="history-list" id="historyList"></div>
+
+      <div style="margin:14px 16px 4px; font-size:12px; font-weight:700; color:#333; border-top:1px solid #eee; padding-top:10px;">📄 긴 글 기록 (Sheet2)</div>
+      <div class="history-list" id="longHistoryList" style="max-height:140px;"></div>
+
       <div class="dialog-btns">
         <button class="winbtn secondary" id="historyCloseBtn">닫기</button>
       </div>
@@ -883,6 +887,7 @@
     document.getElementById('historySelectAll').checked = false;
     document.getElementById('historyBulkDeleteBtn').style.display = 'none';
     historyOverlay.style.display = 'flex';
+    loadLongHistory();
 
     try {
       const res = await fetch('/api/history', {
@@ -1263,6 +1268,47 @@
   function checkLongComplete(){
     if (longInput.value === longTarget && longTarget.length > 0) {
       finishLongPractice();
+    }
+  }
+
+  async function loadLongHistory(){
+    const list = document.getElementById('longHistoryList');
+    list.innerHTML = '<div class="history-empty">불러오는 중...</div>';
+    try {
+      const res = await fetch('/api/longtext/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname: account.nickname, password: account.password })
+      });
+      const data = await res.json();
+      if (!data.ok) { list.innerHTML = '<div class="history-empty">불러올 수 없습니다.</div>'; return; }
+      if (data.history.length === 0) {
+        list.innerHTML = '<div class="history-empty">아직 긴 글 연습 기록이 없어요.</div>';
+        return;
+      }
+      list.innerHTML = data.history.slice().reverse().map(r =>
+        '<div class="history-row">' +
+        '<span>' + fmtDate(r.played_at) + '</span>' +
+        '<span style="flex:1;">' + r.title + '</span>' +
+        '<span>' + r.time_seconds.toFixed(1) + '초</span>' +
+        '<span>' + r.cpm + ' 타/분</span><span>' + r.accuracy + '%</span>' +
+        '<span class="long-hist-del-btn" data-id="' + r.id + '" style="color:#c0392b; cursor:pointer; font-weight:700;">✕</span></div>'
+      ).join('');
+      list.querySelectorAll('.long-hist-del-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('이 기록을 삭제할까요?')) return;
+          try {
+            await fetch('/api/longtext/delete_score', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ nickname: account.nickname, password: account.password, id: btn.dataset.id })
+            });
+          } catch(e) {}
+          loadLongHistory();
+        });
+      });
+    } catch(e) {
+      list.innerHTML = '<div class="history-empty">서버에 연결할 수 없습니다.</div>';
     }
   }
 
