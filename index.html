@@ -450,7 +450,7 @@
     margin-bottom: 8px;
   }
   .fake-caret {
-    display: none;
+    display: inline;
     border-left: 2px solid #0f7244;
     animation: caret-blink 1s step-start infinite;
   }
@@ -678,12 +678,12 @@
             <button class="historybtn" id="longPracticeQuit">그만두기</button>
           </div>
           <div id="longPracticeWrap" style="position:relative; height:440px;">
-            <div id="longPracticeArea" style="border:1px solid #d4d0c8; padding:14px; font-size:14px; line-height:1.9; white-space:pre-wrap; word-break:break-all; height:100%; overflow-y:auto; background:#fafafa;">
+            <div id="longPracticeArea" style="border:1px solid #d4d0c8; padding:14px; font-size:14px; line-height:1.9; white-space:pre-wrap; word-break:keep-all; overflow-wrap:break-word; height:100%; overflow-y:auto; background:#fafafa;">
               <span id="longTypedSpan" style="color:#000;"></span><span id="longFakeCaret" class="fake-caret"></span><span id="longGhostSpan" style="color:#b9b9b9;"></span>
             </div>
             <textarea id="longInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
               style="position:absolute; inset:0; width:100%; height:100%; border:none; padding:14px;
-                font-family:inherit; font-size:14px; line-height:1.9; white-space:pre-wrap; word-break:break-all;
+                font-family:inherit; font-size:14px; line-height:1.9; white-space:pre-wrap; word-break:keep-all; overflow-wrap:break-word;
                 color:transparent; caret-color:transparent; background:transparent; resize:none; outline:none;"></textarea>
           </div>
           <div style="margin-top:8px; font-size:11px; color:#8a8a8a;">칸을 클릭하고 바로 타이핑을 시작하세요. 다 치면 자동으로 종료돼요.</div>
