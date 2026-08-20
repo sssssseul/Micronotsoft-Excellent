@@ -440,8 +440,17 @@
     font-family: inherit;
   }
   .history-dialog { width: 420px; max-width: 92vw; }
-  .history-summary { display: flex; gap: 16px; padding: 4px 16px 10px; font-size: 11.5px; color: #444; }
-  .history-summary b { color: #0f7244; font-size: 15px; display: block; }
+  .history-summary { display: flex; gap: 8px; padding: 4px 16px 12px; }
+  .history-summary .stat-card {
+    flex: 1;
+    background: #f7f9f8;
+    border: 1px solid #e2e2e2;
+    border-radius: 8px;
+    padding: 8px 4px;
+    text-align: center;
+  }
+  .history-summary .stat-card .stat-label { font-size: 9.5px; color: #888; margin-bottom: 3px; }
+  .history-summary .stat-card .stat-value { font-size: 16px; font-weight: 700; color: #0f7244; }
   .history-list { max-height: 160px; overflow-y: auto; margin: 0 16px 12px; border-top: 1px solid #eee; }
   .history-row { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 5px 2px; font-size: 11px; border-bottom: 1px solid #f2f2f2; color: #333; }
   .history-col-labels { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 3px 2px; margin: 0 16px; font-size: 9.5px; font-weight: 700; color: #999; border-bottom: 1px solid #ddd; }
@@ -636,12 +645,29 @@
     <div class="dialog">
       <div class="dialog-title">Micronotsoft Excellent</div>
       <div class="dialog-body">
-        <div class="icon-row">
-          <span class="emoji">📗</span>
-          <div>60초 동안<br>셀을 최대한 채워보세요!</div>
+        <div style="display:flex; gap:6px; margin-bottom:12px;">
+          <button class="winbtn secondary" id="startTabSheet1" style="flex:1;">🔤 Sheet1</button>
+          <button class="winbtn secondary" id="startTabSheet2" style="flex:1;">📄 Sheet2</button>
         </div>
-        <div class="howto-label">[게임 방법]</div>
-        <div class="howto-text">회색 글씨로 표시된 단어를<br>셀 안에 그대로 입력하세요.</div>
+
+        <div id="startContentSheet1">
+          <div class="icon-row">
+            <span class="emoji">📗</span>
+            <div>60초 동안<br>셀을 최대한 채워보세요!</div>
+          </div>
+          <div class="howto-label">[게임 방법]</div>
+          <div class="howto-text">회색 글씨로 표시된 단어를<br>셀 안에 그대로 입력하세요.</div>
+        </div>
+
+        <div id="startContentSheet2" style="display:none;">
+          <div class="icon-row">
+            <span class="emoji">📄</span>
+            <div>내가 등록한 긴 글을<br>통째로 입력해보세요!</div>
+          </div>
+          <div class="howto-label">[게임 방법]</div>
+          <div class="howto-text">가사 등 좋아하는 글을 등록하고<br>처음부터 끝까지 입력해서 시간을 재요.</div>
+        </div>
+
         <div style="height:6px;"></div>
         <input class="loginfield" id="nicknameInput" placeholder="닉네임" maxlength="20">
         <input class="loginfield" id="passwordInput" type="password" placeholder="비밀번호 (4자 이상)" maxlength="40">
@@ -686,7 +712,7 @@
       <div class="history-summary" id="historySummary"></div>
 
       <div style="margin:10px 16px 4px; font-size:12px; font-weight:700; color:#333;">🔤 단어 게임 기록 (Sheet1)</div>
-      <div style="display:flex; justify-content:space-between; align-items:center; margin:0 16px 4px;">
+      <div style="display:flex; justify-content:flex-end; align-items:center; gap:10px; margin:0 16px 4px;">
         <label style="font-size:10.5px; color:#666; display:flex; align-items:center; gap:4px; cursor:pointer;">
           <input type="checkbox" id="historySelectAll"> 전체 선택
         </label>
@@ -698,7 +724,8 @@
       <div class="history-list" id="historyList"></div>
 
       <div style="margin:14px 16px 4px; font-size:12px; font-weight:700; color:#333; border-top:1px solid #eee; padding-top:10px;">📄 긴 글 기록 (Sheet2)</div>
-      <div style="display:flex; justify-content:space-between; align-items:center; margin:0 16px 4px;">
+      <div class="history-summary" id="longHistorySummary"></div>
+      <div style="display:flex; justify-content:flex-end; align-items:center; gap:10px; margin:0 16px 4px;">
         <label style="font-size:10.5px; color:#666; display:flex; align-items:center; gap:4px; cursor:pointer;">
           <input type="checkbox" id="longHistorySelectAll"> 전체 선택
         </label>
@@ -869,10 +896,10 @@
       const bestCells = Math.max(...rows.map(r => r.cells));
       const avgAcc = Math.round(rows.reduce((s,r)=>s+r.accuracy,0) / rows.length);
       summary.innerHTML =
-        '<div>최고 타수<b>' + bestCpm + '</b></div>' +
-        '<div>최고 완료셀<b>' + bestCells + '</b></div>' +
-        '<div>평균 정확도<b>' + avgAcc + '%</b></div>' +
-        '<div>플레이 횟수<b>' + rows.length + '</b></div>';
+        '<div class="stat-card"><div class="stat-label">최고 타수</div><div class="stat-value">' + bestCpm + '</div></div>' +
+        '<div class="stat-card"><div class="stat-label">최고 완료셀</div><div class="stat-value">' + bestCells + '</div></div>' +
+        '<div class="stat-card"><div class="stat-label">평균 정확도</div><div class="stat-value">' + avgAcc + '%</div></div>' +
+        '<div class="stat-card"><div class="stat-label">플레이 횟수</div><div class="stat-value">' + rows.length + '</div></div>';
 
       list.innerHTML = rows.slice().reverse().map(r =>
         '<div class="history-row">' +
@@ -1234,6 +1261,8 @@
     const bulkDeleteBtn = document.getElementById('longHistoryBulkDeleteBtn');
     selectAllBox.checked = false;
     bulkDeleteBtn.style.display = 'none';
+    const longSummary = document.getElementById('longHistorySummary');
+    longSummary.innerHTML = '';
     list.innerHTML = '<div class="history-empty">불러오는 중...</div>';
     try {
       const res = await fetch('/api/longtext/history', {
@@ -1247,6 +1276,16 @@
         list.innerHTML = '<div class="history-empty">아직 긴 글 연습 기록이 없어요.</div>';
         return;
       }
+      const rows2 = data.history;
+      const bestLongCpm = Math.max(...rows2.map(r => r.cpm));
+      const shortestTime = Math.min(...rows2.map(r => r.time_seconds));
+      const avgLongAcc = Math.round(rows2.reduce((s,r)=>s+r.accuracy,0) / rows2.length);
+      longSummary.innerHTML =
+        '<div class="stat-card"><div class="stat-label">최고 타수</div><div class="stat-value">' + bestLongCpm + '</div></div>' +
+        '<div class="stat-card"><div class="stat-label">최단 시간</div><div class="stat-value">' + shortestTime.toFixed(1) + '초</div></div>' +
+        '<div class="stat-card"><div class="stat-label">평균 정확도</div><div class="stat-value">' + avgLongAcc + '%</div></div>' +
+        '<div class="stat-card"><div class="stat-label">연습 횟수</div><div class="stat-value">' + rows2.length + '</div></div>';
+
       list.innerHTML = data.history.slice().reverse().map(r =>
         '<div class="history-row">' +
         '<input type="checkbox" class="long-hist-check" data-id="' + r.id + '">' +
@@ -1532,11 +1571,41 @@
     }
   });
 
+  let startSelectedSheet = 1;
+  const startTabSheet1 = document.getElementById('startTabSheet1');
+  const startTabSheet2 = document.getElementById('startTabSheet2');
+  const startContentSheet1 = document.getElementById('startContentSheet1');
+  const startContentSheet2 = document.getElementById('startContentSheet2');
+  const startBtnEl = document.getElementById('startBtn');
+
+  function updateStartTabUI(){
+    if (startSelectedSheet === 1) {
+      startTabSheet1.classList.remove('secondary');
+      startTabSheet2.classList.add('secondary');
+      startContentSheet1.style.display = 'block';
+      startContentSheet2.style.display = 'none';
+      startBtnEl.textContent = '🔤 게임 시작';
+    } else {
+      startTabSheet2.classList.remove('secondary');
+      startTabSheet1.classList.add('secondary');
+      startContentSheet1.style.display = 'none';
+      startContentSheet2.style.display = 'block';
+      startBtnEl.textContent = '📄 게임 시작';
+    }
+  }
+  startTabSheet1.addEventListener('click', () => { startSelectedSheet = 1; updateStartTabUI(); });
+  startTabSheet2.addEventListener('click', () => { startSelectedSheet = 2; updateStartTabUI(); });
+  updateStartTabUI();
+
   document.getElementById('startBtn').addEventListener('click', async () => {
     const ok = await doLogin();
     if (!ok) return;
     startOverlay.style.display = 'none';
-    startGame();
+    if (startSelectedSheet === 2) {
+      showSheet2();
+    } else {
+      startGame();
+    }
   });
   document.getElementById('startHistoryBtn').addEventListener('click', async () => {
     const ok = await doLogin();
