@@ -463,7 +463,7 @@
   .history-summary { display: flex; gap: 16px; padding: 4px 16px 10px; font-size: 11.5px; color: #444; }
   .history-summary b { color: #0f7244; font-size: 15px; display: block; }
   .history-list { max-height: 160px; overflow-y: auto; margin: 0 16px 12px; border-top: 1px solid #eee; }
-  .history-row { display: flex; justify-content: space-between; padding: 5px 2px; font-size: 11px; border-bottom: 1px solid #f2f2f2; color: #333; }
+  .history-row { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 5px 2px; font-size: 11px; border-bottom: 1px solid #f2f2f2; color: #333; }
   .history-empty { text-align: center; color: #999; font-size: 11.5px; padding: 20px 0; }
 
   ::-webkit-scrollbar { width: 14px; height: 14px; }
@@ -1071,6 +1071,15 @@
   const longResultView = document.getElementById('longResultView');
   const longInput = document.getElementById('longInput');
 
+  function cancelSheet1Game(){
+    if (!gameActive) return;
+    gameActive = false;
+    clearInterval(timer);
+    cellInput.disabled = true;
+    fillHandle.style.display = 'none';
+    resultOverlay.style.display = 'none';
+  }
+
   function showSheet1(){
     sheetTab1.classList.add('active');
     sheetTab2.classList.remove('active');
@@ -1080,6 +1089,7 @@
 
   function showSheet2(){
     if (!account) { needLoginForMatch(); return; }
+    cancelSheet1Game();
     sheetTab1.classList.remove('active');
     sheetTab2.classList.add('active');
     gridwrapEl.style.display = 'none';
@@ -1118,8 +1128,8 @@
           '<span style="flex:1; font-weight:600; color:#333;">' + t.title + '</span>' +
           '<span style="color:#8a8a8a;">' + t.len + '자</span>' +
           '<span style="color:#0f7244;">최고 ' + t.best_cpm + '타/분</span>' +
-          '<span class="historybtn long-practice-btn" data-id="' + t.id + '" style="margin-left:8px;">연습</span>' +
-          '<span class="long-delete-btn" data-id="' + t.id + '" style="margin-left:8px; color:#c0392b; cursor:pointer; font-weight:700;">✕</span>' +
+          '<span class="historybtn long-practice-btn" data-id="' + t.id + '">연습</span>' +
+          '<span class="long-delete-btn" data-id="' + t.id + '" style="color:#c0392b; cursor:pointer; font-weight:700;">✕</span>' +
         '</div>'
       ).join('');
       listEl.querySelectorAll('.long-practice-btn').forEach(btn => {
