@@ -36,6 +36,26 @@ def init_db():
             played_at TIMESTAMP DEFAULT NOW()
         );
     """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS long_texts (
+            id SERIAL PRIMARY KEY,
+            nickname TEXT NOT NULL REFERENCES users(nickname) ON DELETE CASCADE,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT NOW()
+        );
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS long_scores (
+            id SERIAL PRIMARY KEY,
+            text_id INTEGER NOT NULL REFERENCES long_texts(id) ON DELETE CASCADE,
+            nickname TEXT NOT NULL,
+            time_seconds NUMERIC NOT NULL,
+            cpm INTEGER NOT NULL,
+            accuracy INTEGER NOT NULL,
+            played_at TIMESTAMP DEFAULT NOW()
+        );
+    """)
     conn.commit()
     cur.close()
     conn.close()
@@ -175,6 +195,154 @@ def delete_score():
     cur.close()
     conn.close()
     return jsonify(ok=True, deleted=deleted)
+
+
+@app.route("/api/longtext/save", methods=["POST"])
+def longtext_save():
+    data = request.get_json(force=True)
+    nickname = (data.get("nickname") or "").strip()
+    password = data.get("password") or ""
+    title = (data.get("title") or "").strip()
+    content = (data.get("content") or "").strip()
+
+    if not verify_user(nickname, password):
+        return jsonify(ok=False, error="로그인 정보가 올바르지 않습니다."), 401
+    if not title or not content:
+        return jsonify(ok=False, error="제목과 내용을 입력해주세요."), 400
+    if len(title) > 60:
+        return jsonify(ok=False, error="제목은 60자 이내로 입력해주세요."), 400
+    if len(content) > 20000:
+        return jsonify(ok=False, error="내용이 너무 길어요 (최대 20,000자)."), 400
+
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO long_texts (nickname, title, content) VALUES (%s, %s, %s) RETURNING id",
+        (nickname, title, content),
+    )
+    new_id = cur.fetchone()[0]
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify(ok=True, id=new_id)
+
+
+@app.route("/api/longtext/list", methods=["POST"])
+def longtext_list():
+    data = request.get_json(force=True)
+    nickname = (data.get("nickname") or "").strip()
+    password = data.get("password") or ""
+
+    if not verify_user(nickname, password):
+        return jsonify(ok=False, error="로그인 정보가 올바르지 않습니다."), 401
+
+    conn = get_conn()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute(
+        """
+        SELECT lt.id, lt.title, LENGTH(lt.content) AS len, lt.created_at,
+               COALESCE(MAX(ls.cpm), 0) AS best_cpm
+        FROM long_texts lt
+        LEFT JOIN long_scores ls ON ls.text_id = lt.id AND ls.nickname = lt.nickname
+        WHERE lt.nickname = %s
+        GROUP BY lt.id
+        ORDER BY lt.created_at DESC
+        """,
+        (nickname,),
+    )
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    result = [
+        {
+            "id": r["id"],
+            "title": r["title"],
+            "len": r["len"],
+            "best_cpm": r["best_cpm"],
+            "created_at": r["created_at"].isoformat(),
+        }
+        for r in rows
+    ]
+    return jsonify(ok=True, texts=result)
+
+
+@app.route("/api/longtext/get", methods=["POST"])
+def longtext_get():
+    data = request.get_json(force=True)
+    nickname = (data.get("nickname") or "").strip()
+    password = data.get("password") or ""
+    text_id = data.get("id")
+
+    if not verify_user(nickname, password):
+        return jsonify(ok=False, error="로그인 정보가 올바르지 않습니다."), 401
+
+    conn = get_conn()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute(
+        "SELECT id, title, content FROM long_texts WHERE id = %s AND nickname = %s",
+        (text_id, nickname),
+    )
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    if not row:
+        return jsonify(ok=False, error="글을 찾을 수 없습니다."), 404
+    return jsonify(ok=True, text={"id": row["id"], "title": row["title"], "content": row["content"]})
+
+
+@app.route("/api/longtext/delete", methods=["POST"])
+def longtext_delete():
+    data = request.get_json(force=True)
+    nickname = (data.get("nickname") or "").strip()
+    password = data.get("password") or ""
+    text_id = data.get("id")
+
+    if not verify_user(nickname, password):
+        return jsonify(ok=False, error="로그인 정보가 올바르지 않습니다."), 401
+
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "DELETE FROM long_texts WHERE id = %s AND nickname = %s",
+        (text_id, nickname),
+    )
+    deleted = cur.rowcount
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify(ok=True, deleted=deleted)
+
+
+@app.route("/api/longtext/submit_score", methods=["POST"])
+def longtext_submit_score():
+    data = request.get_json(force=True)
+    nickname = (data.get("nickname") or "").strip()
+    password = data.get("password") or ""
+    text_id = data.get("text_id")
+    time_seconds = float(data.get("time_seconds", 0))
+    cpm = int(data.get("cpm", 0))
+    accuracy = int(data.get("accuracy", 0))
+
+    if not verify_user(nickname, password):
+        return jsonify(ok=False, error="로그인 정보가 올바르지 않습니다."), 401
+
+    conn = get_conn()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT id FROM long_texts WHERE id = %s AND nickname = %s", (text_id, nickname))
+    if not cur.fetchone():
+        cur.close()
+        conn.close()
+        return jsonify(ok=False, error="글을 찾을 수 없습니다."), 404
+
+    cur.execute(
+        "INSERT INTO long_scores (text_id, nickname, time_seconds, cpm, accuracy) VALUES (%s, %s, %s, %s, %s)",
+        (text_id, nickname, time_seconds, cpm, accuracy),
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify(ok=True)
 
 
 @app.route("/api/leaderboard", methods=["GET"])
