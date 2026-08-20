@@ -583,16 +583,20 @@
       </div>
     </div>
 
-    <div id="longPracticeView" style="display:none; background:#fff; border:1px solid #e2e2e2; border-radius:6px; padding:14px; box-shadow:0 1px 4px rgba(0,0,0,0.06); height:calc(100% - 28px);">
+    <div id="longPracticeView" style="display:none; background:transparent; border:none; box-shadow:none; padding:0; height:100%;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <div style="font-size:13px; font-weight:700; color:#333;" id="longPracticeTitle"></div>
         <button class="historybtn" id="longPracticeQuit">그만두기</button>
       </div>
-      <div id="longPracticeArea" style="border:1px solid #e2e2e2; border-radius:6px; padding:14px; font-size:14px; line-height:1.9; white-space:pre-wrap; word-break:break-all; height:calc(100% - 90px); overflow-y:auto; background:#fafafa;">
-        <span id="longTypedSpan" style="color:#000;"></span><span id="longGhostSpan" style="color:#b9b9b9;"></span>
+      <div id="longPracticeWrap" style="position:relative; height:calc(100% - 90px);">
+        <div id="longPracticeArea" style="border:1px solid #e2e2e2; border-radius:6px; padding:14px; font-size:14px; line-height:1.9; white-space:pre-wrap; word-break:break-all; height:100%; overflow-y:auto; background:#fafafa;">
+          <span id="longTypedSpan" style="color:#000;"></span><span id="longGhostSpan" style="color:#b9b9b9;"></span>
+        </div>
+        <textarea id="longInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+          style="position:absolute; inset:0; width:100%; height:100%; border:none; border-radius:6px; padding:14px;
+            font-family:inherit; font-size:14px; line-height:1.9; white-space:pre-wrap; word-break:break-all;
+            color:transparent; caret-color:#0f7244; background:transparent; resize:none; outline:none;"></textarea>
       </div>
-      <textarea id="longInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-        style="position:absolute; top:0; left:0; opacity:0; height:1px; width:1px; pointer-events:none;"></textarea>
       <div style="margin-top:8px; font-size:11px; color:#8a8a8a;">칸을 클릭하고 바로 타이핑을 시작하세요. 다 치면 자동으로 종료돼요.</div>
     </div>
 
@@ -1134,6 +1138,9 @@
   }
 
   document.getElementById('longPracticeArea').addEventListener('click', () => longInput.focus());
+  longInput.addEventListener('scroll', () => {
+    document.getElementById('longPracticeArea').scrollTop = longInput.scrollTop;
+  });
 
   longInput.addEventListener('compositionstart', () => { longIsComposing = true; });
   longInput.addEventListener('compositionend', () => {
