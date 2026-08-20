@@ -1289,6 +1289,7 @@
         .map(line => line.replace(/^[\s\u00A0\u3000]+|[\s\u00A0\u3000]+$/g, ''))
         .join('\n')
         .replace(/^\n+|\n+$/g, '');
+      alert('RAW: ' + JSON.stringify(data.text.content.slice(0, 60)) + '\n\nTRIMMED: ' + JSON.stringify(longTarget.slice(0, 60)));
       document.getElementById('longPracticeTitle').textContent = data.text.title;
 
       longListView.style.display = 'none';
