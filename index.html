@@ -449,6 +449,14 @@
     font-family: inherit;
     margin-bottom: 8px;
   }
+  .fake-caret {
+    color: #0f7244;
+    font-weight: 400;
+    animation: caret-blink 1s step-start infinite;
+  }
+  @keyframes caret-blink {
+    50% { opacity: 0; }
+  }
   .loginerr {
     color: #c0392b;
     font-size: 11px;
@@ -490,9 +498,21 @@
   }
   .history-summary .stat-card .stat-label { font-size: 9.5px; color: #888; margin-bottom: 3px; }
   .history-summary .stat-card .stat-value { font-size: 16px; font-weight: 700; color: #0f7244; }
-  .history-list { max-height: 160px; overflow-y: auto; margin: 0 16px 12px; border-top: 1px solid #eee; }
-  .history-row { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 5px 2px; font-size: 11px; border-bottom: 1px solid #f2f2f2; color: #333; }
-  .history-col-labels { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 3px 2px; margin: 0 16px; font-size: 9.5px; font-weight: 700; color: #999; border-bottom: 1px solid #ddd; }
+  .history-table-wrap { max-height: 180px; overflow-y: auto; margin: 0 16px 12px; }
+  .record-table { width: 100%; border-collapse: collapse; }
+  .record-table thead th {
+    position: sticky; top: 0; background: #fff;
+    text-align: center;
+    font-size: 9.5px; font-weight: 700; color: #999;
+    padding: 4px 2px; border-bottom: 1px solid #ddd;
+  }
+  .record-table tbody td {
+    text-align: center;
+    font-size: 11px; color: #333;
+    padding: 6px 2px; border-bottom: 1px solid #f2f2f2;
+  }
+  .record-table tbody td.title-cell { text-align: left; }
+  .record-table tbody td.del-cell { color: #c0392b; cursor: pointer; font-weight: 700; }
   .history-empty { text-align: center; color: #999; font-size: 11.5px; padding: 20px 0; }
 
   ::-webkit-scrollbar { width: 14px; height: 14px; }
@@ -648,12 +668,12 @@
           </div>
           <div id="longPracticeWrap" style="position:relative; height:440px;">
             <div id="longPracticeArea" style="border:1px solid #d4d0c8; padding:14px; font-size:14px; line-height:1.9; white-space:pre-wrap; word-break:break-all; height:100%; overflow-y:auto; background:#fafafa;">
-              <span id="longTypedSpan" style="color:#000;"></span><span id="longGhostSpan" style="color:#b9b9b9;"></span>
+              <span id="longTypedSpan" style="color:#000;"></span><span id="longFakeCaret" class="fake-caret">|</span><span id="longGhostSpan" style="color:#b9b9b9;"></span>
             </div>
             <textarea id="longInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
               style="position:absolute; inset:0; width:100%; height:100%; border:none; padding:14px;
                 font-family:inherit; font-size:14px; line-height:1.9; white-space:pre-wrap; word-break:break-all;
-                color:transparent; caret-color:#0f7244; background:transparent; resize:none; outline:none;"></textarea>
+                color:transparent; caret-color:transparent; background:transparent; resize:none; outline:none;"></textarea>
           </div>
           <div style="margin-top:8px; font-size:11px; color:#8a8a8a;">칸을 클릭하고 바로 타이핑을 시작하세요. 다 치면 자동으로 종료돼요.</div>
         </div>
@@ -769,10 +789,21 @@
         </label>
         <button class="historybtn" id="historyBulkDeleteBtn" style="display:none; color:#c0392b; border-color:#e0b0b0;">선택 삭제</button>
       </div>
-      <div class="history-col-labels">
-        <span style="width:16px;"></span><span>날짜</span><span>완료 셀</span><span>타수</span><span>정확도</span><span style="width:14px;"></span>
+      <div class="history-table-wrap">
+        <table class="record-table">
+          <thead>
+            <tr>
+              <th style="width:20px;"></th>
+              <th>날짜</th>
+              <th>완료 셀</th>
+              <th>타수</th>
+              <th>정확도</th>
+              <th style="width:18px;"></th>
+            </tr>
+          </thead>
+          <tbody id="historyList"></tbody>
+        </table>
       </div>
-      <div class="history-list" id="historyList"></div>
 
       <div style="margin:14px 16px 4px; font-size:12px; font-weight:700; color:#333; border-top:1px solid #eee; padding-top:10px;">📄 긴 글 기록 (Sheet2)</div>
       <div class="history-summary" id="longHistorySummary"></div>
@@ -782,10 +813,22 @@
         </label>
         <button class="historybtn" id="longHistoryBulkDeleteBtn" style="display:none; color:#c0392b; border-color:#e0b0b0;">선택 삭제</button>
       </div>
-      <div class="history-col-labels">
-        <span style="width:16px;"></span><span>날짜</span><span style="flex:1;">제목</span><span>걸린시간</span><span>타수</span><span>정확도</span><span style="width:14px;"></span>
+      <div class="history-table-wrap" style="max-height:180px;">
+        <table class="record-table">
+          <thead>
+            <tr>
+              <th style="width:20px;"></th>
+              <th>날짜</th>
+              <th style="text-align:center;">제목</th>
+              <th>걸린시간</th>
+              <th>타수</th>
+              <th>정확도</th>
+              <th style="width:18px;"></th>
+            </tr>
+          </thead>
+          <tbody id="longHistoryList"></tbody>
+        </table>
       </div>
-      <div class="history-list" id="longHistoryList" style="max-height:160px;"></div>
 
       <div class="dialog-btns">
         <button class="winbtn secondary" id="historyCloseBtn">닫기</button>
@@ -921,7 +964,7 @@
     const summary = document.getElementById('historySummary');
     const list = document.getElementById('historyList');
     summary.innerHTML = '';
-    list.innerHTML = '<div class="history-empty">불러오는 중...</div>';
+    list.innerHTML = '<tr><td colspan="6" class="history-empty">불러오는 중...</td></tr>';
     document.getElementById('historySelectAll').checked = false;
     document.getElementById('historyBulkDeleteBtn').style.display = 'none';
     historyOverlay.style.display = 'flex';
@@ -935,12 +978,12 @@
       });
       const data = await res.json();
       if (!data.ok) {
-        list.innerHTML = '<div class="history-empty">기록을 불러올 수 없습니다.</div>';
+        list.innerHTML = '<tr><td colspan="6" class="history-empty">기록을 불러올 수 없습니다.</td></tr>';
         return;
       }
       const rows = data.history;
       if (rows.length === 0) {
-        list.innerHTML = '<div class="history-empty">아직 플레이 기록이 없어요.</div>';
+        list.innerHTML = '<tr><td colspan="6" class="history-empty">아직 플레이 기록이 없어요.</td></tr>';
         return;
       }
       const bestCpm = Math.max(...rows.map(r => r.cpm));
@@ -953,11 +996,11 @@
         '<div class="stat-card"><div class="stat-label">플레이 횟수</div><div class="stat-value">' + rows.length + '</div></div>';
 
       list.innerHTML = rows.slice().reverse().map(r =>
-        '<div class="history-row">' +
-        '<input type="checkbox" class="history-row-check" data-id="' + r.id + '" style="margin-right:6px;">' +
-        '<span>' + fmtDate(r.played_at) + '</span>' +
-        '<span>셀 ' + r.cells + '</span><span>' + r.cpm + ' 타/분</span><span>' + r.accuracy + '%</span>' +
-        '<span class="del-score-btn" data-id="' + r.id + '" style="color:#c0392b; cursor:pointer; font-weight:700;">✕</span></div>'
+        '<tr>' +
+        '<td><input type="checkbox" class="history-row-check" data-id="' + r.id + '"></td>' +
+        '<td>' + fmtDate(r.played_at) + '</td>' +
+        '<td>셀 ' + r.cells + '</td><td>' + r.cpm + ' 타/분</td><td>' + r.accuracy + '%</td>' +
+        '<td class="del-score-btn del-cell" data-id="' + r.id + '">✕</td></tr>'
       ).join('');
 
       const selectAllBox = document.getElementById('historySelectAll');
@@ -1007,7 +1050,7 @@
         });
       });
     } catch(e) {
-      list.innerHTML = '<div class="history-empty">서버에 연결할 수 없습니다.</div>';
+      list.innerHTML = '<tr><td colspan="6" class="history-empty">서버에 연결할 수 없습니다.</td></tr>';
     }
   }
 
@@ -1295,7 +1338,7 @@
     bulkDeleteBtn.style.display = 'none';
     const longSummary = document.getElementById('longHistorySummary');
     longSummary.innerHTML = '';
-    list.innerHTML = '<div class="history-empty">불러오는 중...</div>';
+    list.innerHTML = '<tr><td colspan="7" class="history-empty">불러오는 중...</td></tr>';
     try {
       const res = await fetch('/api/longtext/history', {
         method: 'POST',
@@ -1303,9 +1346,9 @@
         body: JSON.stringify({ nickname: account.nickname, password: account.password })
       });
       const data = await res.json();
-      if (!data.ok) { list.innerHTML = '<div class="history-empty">불러올 수 없습니다.</div>'; return; }
+      if (!data.ok) { list.innerHTML = '<tr><td colspan="7" class="history-empty">불러올 수 없습니다.</td></tr>'; return; }
       if (data.history.length === 0) {
-        list.innerHTML = '<div class="history-empty">아직 긴 글 연습 기록이 없어요.</div>';
+        list.innerHTML = '<tr><td colspan="7" class="history-empty">아직 긴 글 연습 기록이 없어요.</td></tr>';
         return;
       }
       const rows2 = data.history;
@@ -1319,13 +1362,13 @@
         '<div class="stat-card"><div class="stat-label">연습 횟수</div><div class="stat-value">' + rows2.length + '</div></div>';
 
       list.innerHTML = data.history.slice().reverse().map(r =>
-        '<div class="history-row">' +
-        '<input type="checkbox" class="long-hist-check" data-id="' + r.id + '">' +
-        '<span>' + fmtDate(r.played_at) + '</span>' +
-        '<span style="flex:1;">' + r.title + '</span>' +
-        '<span>' + r.time_seconds.toFixed(1) + '초</span>' +
-        '<span>' + r.cpm + ' 타/분</span><span>' + r.accuracy + '%</span>' +
-        '<span class="long-hist-del-btn" data-id="' + r.id + '" style="color:#c0392b; cursor:pointer; font-weight:700;">✕</span></div>'
+        '<tr>' +
+        '<td><input type="checkbox" class="long-hist-check" data-id="' + r.id + '"></td>' +
+        '<td>' + fmtDate(r.played_at) + '</td>' +
+        '<td class="title-cell">' + r.title + '</td>' +
+        '<td>' + r.time_seconds.toFixed(1) + '초</td>' +
+        '<td>' + r.cpm + ' 타/분</td><td>' + r.accuracy + '%</td>' +
+        '<td class="long-hist-del-btn del-cell" data-id="' + r.id + '">✕</td></tr>'
       ).join('');
 
       function updateLongBulkVisibility(){
@@ -1367,7 +1410,7 @@
         });
       });
     } catch(e) {
-      list.innerHTML = '<div class="history-empty">서버에 연결할 수 없습니다.</div>';
+      list.innerHTML = '<tr><td colspan="7" class="history-empty">서버에 연결할 수 없습니다.</td></tr>';
     }
   }
 
