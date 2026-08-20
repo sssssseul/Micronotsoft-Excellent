@@ -60,7 +60,7 @@ def init_db():
 
     cur.execute("SELECT id, content FROM long_texts")
     for row_id, content in cur.fetchall():
-        fixed = "\n".join(line.strip() for line in content.split("\n"))
+        fixed = "\n".join(line.strip() for line in content.split("\n")).strip("\n")
         if fixed != content:
             cur.execute("UPDATE long_texts SET content = %s WHERE id = %s", (fixed, row_id))
     conn.commit()
@@ -352,6 +352,70 @@ def longtext_submit_score():
     cur.close()
     conn.close()
     return jsonify(ok=True)
+
+
+@app.route("/api/longtext/history", methods=["POST"])
+def longtext_history():
+    data = request.get_json(force=True)
+    nickname = (data.get("nickname") or "").strip()
+    password = data.get("password") or ""
+
+    if not verify_user(nickname, password):
+        return jsonify(ok=False, error="로그인 정보가 올바르지 않습니다."), 401
+
+    conn = get_conn()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute(
+        """
+        SELECT ls.id, lt.title, ls.time_seconds, ls.cpm, ls.accuracy, ls.played_at
+        FROM long_scores ls
+        JOIN long_texts lt ON lt.id = ls.text_id
+        WHERE ls.nickname = %s
+        ORDER BY ls.played_at ASC
+        """,
+        (nickname,),
+    )
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    result = [
+        {
+            "id": r["id"],
+            "title": r["title"],
+            "time_seconds": float(r["time_seconds"]),
+            "cpm": r["cpm"],
+            "accuracy": r["accuracy"],
+            "played_at": r["played_at"].isoformat(),
+        }
+        for r in rows
+    ]
+    return jsonify(ok=True, history=result)
+
+
+@app.route("/api/longtext/delete_score", methods=["POST"])
+def longtext_delete_score():
+    data = request.get_json(force=True)
+    nickname = (data.get("nickname") or "").strip()
+    password = data.get("password") or ""
+    score_id = data.get("id")
+
+    if not verify_user(nickname, password):
+        return jsonify(ok=False, error="로그인 정보가 올바르지 않습니다."), 401
+    if not score_id:
+        return jsonify(ok=False, error="삭제할 기록을 찾을 수 없습니다."), 400
+
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "DELETE FROM long_scores WHERE id = %s AND nickname = %s",
+        (score_id, nickname),
+    )
+    deleted = cur.rowcount
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify(ok=True, deleted=deleted)
 
 
 @app.route("/api/leaderboard", methods=["GET"])
