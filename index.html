@@ -411,8 +411,8 @@
     z-index: 5;
     display: flex;
     height: 22px;
-    background: linear-gradient(180deg,#f4f2ea,#dedad0);
-    border-bottom: 1px solid #b6b3a5;
+    background: #f3f3f3;
+    border-bottom: 1px solid #dcdcdc;
   }
   .long-col-header-row > div {
     width: 84px;
@@ -427,8 +427,8 @@
   .long-row-header-col {
     width: 34px;
     flex-shrink: 0;
-    background: linear-gradient(90deg,#f4f2ea,#dedad0);
-    border-right: 1px solid #b6b3a5;
+    background: #f3f3f3;
+    border-right: 1px solid #dcdcdc;
   }
   .long-row-header-col > div {
     height: 26px;
@@ -1225,7 +1225,12 @@
       const data = await res.json();
       if (!data.ok) { alert(data.error || '글을 불러올 수 없어요.'); return; }
       longTextId = data.text.id;
-      longTarget = data.text.content.split('\n').map(line => line.trim()).join('\n').replace(/^\n+|\n+$/g, '');
+      longTarget = data.text.content
+        .replace(/^\uFEFF/, '')
+        .split('\n')
+        .map(line => line.replace(/^[\s\u00A0\u3000]+|[\s\u00A0\u3000]+$/g, ''))
+        .join('\n')
+        .replace(/^\n+|\n+$/g, '');
       document.getElementById('longPracticeTitle').textContent = data.text.title;
 
       longListView.style.display = 'none';
