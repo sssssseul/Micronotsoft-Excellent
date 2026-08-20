@@ -444,6 +444,7 @@
   .history-summary b { color: #0f7244; font-size: 15px; display: block; }
   .history-list { max-height: 160px; overflow-y: auto; margin: 0 16px 12px; border-top: 1px solid #eee; }
   .history-row { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 5px 2px; font-size: 11px; border-bottom: 1px solid #f2f2f2; color: #333; }
+  .history-col-labels { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 3px 2px; margin: 0 16px; font-size: 9.5px; font-weight: 700; color: #999; border-bottom: 1px solid #ddd; }
   .history-empty { text-align: center; color: #999; font-size: 11.5px; padding: 20px 0; }
 
   ::-webkit-scrollbar { width: 14px; height: 14px; }
@@ -683,17 +684,30 @@
     <div class="dialog history-dialog" style="max-height:85vh; overflow-y:auto;">
       <div class="dialog-title">내 기록 추이 - <span id="historyNick"></span></div>
       <div class="history-summary" id="historySummary"></div>
-      <canvas id="historyChart" width="380" height="140" style="display:block;margin:0 16px 10px;"></canvas>
+
+      <div style="margin:10px 16px 4px; font-size:12px; font-weight:700; color:#333;">🔤 단어 게임 기록 (Sheet1)</div>
       <div style="display:flex; justify-content:space-between; align-items:center; margin:0 16px 4px;">
         <label style="font-size:10.5px; color:#666; display:flex; align-items:center; gap:4px; cursor:pointer;">
           <input type="checkbox" id="historySelectAll"> 전체 선택
         </label>
         <button class="historybtn" id="historyBulkDeleteBtn" style="display:none; color:#c0392b; border-color:#e0b0b0;">선택 삭제</button>
       </div>
+      <div class="history-col-labels">
+        <span style="width:16px;"></span><span>날짜</span><span>완료 셀</span><span>타수</span><span>정확도</span><span style="width:14px;"></span>
+      </div>
       <div class="history-list" id="historyList"></div>
 
       <div style="margin:14px 16px 4px; font-size:12px; font-weight:700; color:#333; border-top:1px solid #eee; padding-top:10px;">📄 긴 글 기록 (Sheet2)</div>
-      <div class="history-list" id="longHistoryList" style="max-height:140px;"></div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin:0 16px 4px;">
+        <label style="font-size:10.5px; color:#666; display:flex; align-items:center; gap:4px; cursor:pointer;">
+          <input type="checkbox" id="longHistorySelectAll"> 전체 선택
+        </label>
+        <button class="historybtn" id="longHistoryBulkDeleteBtn" style="display:none; color:#c0392b; border-color:#e0b0b0;">선택 삭제</button>
+      </div>
+      <div class="history-col-labels">
+        <span style="width:16px;"></span><span>날짜</span><span style="flex:1;">제목</span><span>걸린시간</span><span>타수</span><span>정확도</span><span style="width:14px;"></span>
+      </div>
+      <div class="history-list" id="longHistoryList" style="max-height:160px;"></div>
 
       <div class="dialog-btns">
         <button class="winbtn secondary" id="historyCloseBtn">닫기</button>
@@ -818,60 +832,6 @@
     return (d.getMonth()+1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
   }
 
-  function drawChart(rows){
-    const canvas = document.getElementById('historyChart');
-    const ctx = canvas.getContext('2d');
-    const W = canvas.width, H = canvas.height;
-    ctx.clearRect(0,0,W,H);
-    if (rows.length === 0) return;
-    const padL = 32, padR = 10, padT = 10, padB = 20;
-    const plotW = W - padL - padR, plotH = H - padT - padB;
-    const cpms = rows.map(r => r.cpm);
-    let maxCpm = Math.max(...cpms, 10);
-    maxCpm = Math.ceil(maxCpm / 10) * 10;
-
-    ctx.strokeStyle = '#e5e5e5';
-    ctx.fillStyle = '#999';
-    ctx.font = '9px Segoe UI, Arial';
-    ctx.lineWidth = 1;
-    for (let i = 0; i <= 4; i++) {
-      const y = padT + plotH - (plotH * i / 4);
-      ctx.beginPath();
-      ctx.moveTo(padL, y);
-      ctx.lineTo(W - padR, y);
-      ctx.stroke();
-      ctx.fillText(Math.round(maxCpm * i / 4), 2, y + 3);
-    }
-
-    const stepX = rows.length > 1 ? plotW / (rows.length - 1) : 0;
-    ctx.strokeStyle = '#0f7244';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    rows.forEach((r, i) => {
-      const x = padL + stepX * i;
-      const y = padT + plotH - (plotH * r.cpm / maxCpm);
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-
-    ctx.fillStyle = '#0f7244';
-    rows.forEach((r, i) => {
-      const x = padL + stepX * i;
-      const y = padT + plotH - (plotH * r.cpm / maxCpm);
-      ctx.beginPath();
-      ctx.arc(x, y, 2.5, 0, Math.PI * 2);
-      ctx.fill();
-    });
-
-    ctx.fillStyle = '#999';
-    ctx.font = '9px Segoe UI, Arial';
-    ctx.fillText(fmtDate(rows[0].played_at), padL, H - 4);
-    if (rows.length > 1) {
-      const lastLabel = fmtDate(rows[rows.length-1].played_at);
-      ctx.fillText(lastLabel, W - padR - ctx.measureText(lastLabel).width, H - 4);
-    }
-  }
-
   async function openHistory(){
     if (!account) {
       startOverlay.style.display = 'flex';
@@ -903,7 +863,6 @@
       const rows = data.history;
       if (rows.length === 0) {
         list.innerHTML = '<div class="history-empty">아직 플레이 기록이 없어요.</div>';
-        drawChart([]);
         return;
       }
       const bestCpm = Math.max(...rows.map(r => r.cpm));
@@ -914,8 +873,6 @@
         '<div>최고 완료셀<b>' + bestCells + '</b></div>' +
         '<div>평균 정확도<b>' + avgAcc + '%</b></div>' +
         '<div>플레이 횟수<b>' + rows.length + '</b></div>';
-
-      drawChart(rows);
 
       list.innerHTML = rows.slice().reverse().map(r =>
         '<div class="history-row">' +
@@ -1273,6 +1230,10 @@
 
   async function loadLongHistory(){
     const list = document.getElementById('longHistoryList');
+    const selectAllBox = document.getElementById('longHistorySelectAll');
+    const bulkDeleteBtn = document.getElementById('longHistoryBulkDeleteBtn');
+    selectAllBox.checked = false;
+    bulkDeleteBtn.style.display = 'none';
     list.innerHTML = '<div class="history-empty">불러오는 중...</div>';
     try {
       const res = await fetch('/api/longtext/history', {
@@ -1288,12 +1249,39 @@
       }
       list.innerHTML = data.history.slice().reverse().map(r =>
         '<div class="history-row">' +
+        '<input type="checkbox" class="long-hist-check" data-id="' + r.id + '">' +
         '<span>' + fmtDate(r.played_at) + '</span>' +
         '<span style="flex:1;">' + r.title + '</span>' +
         '<span>' + r.time_seconds.toFixed(1) + '초</span>' +
         '<span>' + r.cpm + ' 타/분</span><span>' + r.accuracy + '%</span>' +
         '<span class="long-hist-del-btn" data-id="' + r.id + '" style="color:#c0392b; cursor:pointer; font-weight:700;">✕</span></div>'
       ).join('');
+
+      function updateLongBulkVisibility(){
+        const anyChecked = list.querySelectorAll('.long-hist-check:checked').length > 0;
+        bulkDeleteBtn.style.display = anyChecked ? 'inline-block' : 'none';
+      }
+      list.querySelectorAll('.long-hist-check').forEach(cb => {
+        cb.addEventListener('change', updateLongBulkVisibility);
+      });
+      selectAllBox.onchange = () => {
+        list.querySelectorAll('.long-hist-check').forEach(cb => { cb.checked = selectAllBox.checked; });
+        updateLongBulkVisibility();
+      };
+      bulkDeleteBtn.onclick = async () => {
+        const ids = Array.from(list.querySelectorAll('.long-hist-check:checked')).map(cb => cb.dataset.id);
+        if (ids.length === 0) return;
+        if (!confirm(ids.length + '개의 기록을 삭제할까요?')) return;
+        try {
+          await Promise.all(ids.map(id => fetch('/api/longtext/delete_score', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nickname: account.nickname, password: account.password, id })
+          })));
+        } catch(e) {}
+        loadLongHistory();
+      };
+
       list.querySelectorAll('.long-hist-del-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
           if (!confirm('이 기록을 삭제할까요?')) return;
